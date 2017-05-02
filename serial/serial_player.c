@@ -709,7 +709,7 @@ void make_move(){
 int main(){
 
     char inbuf[256];
-    char playerstring[1];
+    char playerstring;
     int x,y;
     turn = 0;
     /*unsigned long long board[2];
@@ -722,8 +722,10 @@ int main(){
         error("Couldn't read from inpbuf");
     }
 
-    if (sscanf(inbuf, "game %1s %d %d %d", playerstring, &depthlimit, &timelimit1, &timelimit2) != 4) {
-        error("Bad initial input");
+    if (sscanf(inbuf, "game %c %d %d %d", &playerstring, &depthlimit, &timelimit1, &timelimit2) != 4) {
+        error("Bad initial input\nusage: game <color> <depthlimit> <total_timelimit> <turn_timelimit>\n" \
+           "    -color: a single char (B/W) representing this player's color. 'W' is default\n" \
+           "    -limits: only specify a single limit and enter 0 for the others");
     }
     if (timelimit1 > 0) {
         for (unsigned char i = 0; i < 14; i++) {
@@ -733,7 +735,7 @@ int main(){
             }
         }
     }
-    if (playerstring[0] == 'B') {
+    if (playerstring == 'B' || playerstring == 'b') {
        color = BLACK;
     } else{
        color = WHITE;
