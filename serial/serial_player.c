@@ -291,7 +291,7 @@ unsigned long long _generate_moves(unsigned long long board[2][4], int color){
 	unsigned long long boardR45 = 0;
 	unsigned long long boardL45 = 0;
 
-	for(unsigned char i = 0; i<8; i++){ //must cast to long long because fuck C (all untyped numbers are int by default
+	for(unsigned char i = 0; i<8; i++){ //must cast to long long because fuck C (all untyped numbers are int by default)
 		boardR0 |= (long long)moveTable[(board[WHITE][R0]>>(8*(7-i)))&mask[0]][(board[BLACK][R0]>>(8*(7-i)))&mask[0]][color] << (8*(7-i));
 		boardR90 |= (long long)moveTable[(board[WHITE][R90]>>(8*(7-i)))&mask[0]][(board[BLACK][R90]>>(8*(7-i)))&mask[0]][color] << (8*(7-i));
 		boardR45 |= ((long long)moveTable[(board[WHITE][R45]>>(8*(7-i)))&mask[i]][(board[BLACK][R45]>>(8*(7-i)))&mask[i]][color]&mask[i]) << (8*(7-i));
@@ -492,7 +492,7 @@ void generate_children(state_t* head, unsigned long long currBoard[2] , unsigned
 
 }
 
-/***********************START Fuck functions***********************/
+/***********************START special functions***********************/
 
 //Prints msg as error
 void error(char * msg){
@@ -514,7 +514,7 @@ int game_over(unsigned long long board[2]){
 	return !(generate_moves(board, WHITE)|generate_moves(board, BLACK));
 }
 
-/************************END Fuck functions************************/
+/************************END special functions************************/
 
 
 void sort_children(state_t** node, int player){
@@ -625,7 +625,7 @@ double minimax(state_t *node,state_t* bestState, int depth, int currentPlayer,do
         }
 
         if (depth == 1)
-        p++;
+        	p++;
 
        	//go to next child
         current = current->next;
