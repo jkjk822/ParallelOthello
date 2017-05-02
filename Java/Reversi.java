@@ -216,14 +216,14 @@ class GPanel extends JPanel implements MouseListener {
 		active = false;
 		if (board.counter[0] > board.counter[1]) {
 			//JOptionPane.showMessageDialog(this, "You win!","Reversi",JOptionPane.INFORMATION_MESSAGE);
-			System.out.println("winner B " +  (board.counter[0] - board.counter[1]) + " legal");
+			System.out.println("winner Black " +  (board.counter[0] - board.counter[1]) + " legal");
 		}
 		else if (board.counter[0] < board.counter[1]) {
 		   	//JOptionPane.showMessageDialog(this, "I win!","Reversi",JOptionPane.INFORMATION_MESSAGE);
-			System.out.println("winner W " +  (board.counter[1] - board.counter[0]) + " legal");
+			System.out.println("winner White " +  (board.counter[1] - board.counter[0]) + " legal");
 		}
 		else {
-			System.out.println("winner T 0 legal");
+			System.out.println("Tie 0 legal");
 			//JOptionPane.showMessageDialog(this, "Drawn!","Reversi",JOptionPane.INFORMATION_MESSAGE);
 		}
 		if(blackPlayer != null)
@@ -279,15 +279,20 @@ class GPanel extends JPanel implements MouseListener {
 
 				//if(!board.userCanMove(TKind.black)&& !board.userCanMove(TKind.white))
 					//showWinner();	
+
+				long duration = 0;
 				try {
 					if(!DISPLAY.equals("none"))
-						System.out.println("about to read input");
-			if ( (iswhite && !whH) || (!iswhite && !blH)) {
+						System.out.println("waiting to read input");
+					if ( (iswhite && !whH) || (!iswhite && !blH)) {
+						long startTime = System.nanoTime();
                 		input = currentOut.readLine();
-			}
-			else {
-				input = this.currentMove;
-			}
+                		long endTime = System.nanoTime();
+                		duration = (endTime - startTime);
+					}
+					else {
+						input = this.currentMove;
+					}
 					
 				}catch(Exception io) {
 					if(!DISPLAY.equals("none"))
@@ -295,8 +300,8 @@ class GPanel extends JPanel implements MouseListener {
 					//System.exit(1);
 					illegalMove();
 				}
-					if(!DISPLAY.equals("none"))
-						System.out.println("read input: "+input);
+				if(!DISPLAY.equals("none"))
+					System.out.println("read input: "+input);
 				if(input == null) {illegalMove();}
 					
 				//System.out.println(board.textBoard());
@@ -312,12 +317,12 @@ class GPanel extends JPanel implements MouseListener {
 						if ((!iswhite && (i < 8) && (j < 8) && (board.get(i,j) == TKind.nil) && (board.move(new Move(i,j),TKind.black) != 0)) || 
 							(iswhite && (i < 8) && (j < 8) && (board.get(i,j) == TKind.nil) && (board.move(new Move(i,j),TKind.white) != 0))) 
 							{
-					if(!DISPLAY.equals("none"))
-                        		  System.out.println(input);
+							if(!DISPLAY.equals("none"))
+		                        System.out.println("time (ms): " + duration/1000000);
 							if(otherIn != null) {
 								try {
-								otherIn.write(input + "\n");
-								otherIn.flush();
+									otherIn.write(input + "\n");
+									otherIn.flush();
 								}
 								catch(IOException ioe) {
 									if(!DISPLAY.equals("none"))
@@ -326,11 +331,11 @@ class GPanel extends JPanel implements MouseListener {
 									illegalMove();
 
 								}
-								}
-									
-								validInput = true;
-								//flag = false;
 							}
+									
+							validInput = true;
+							//flag = false;
+						}
 						else 
 							illegalMove();
 					}catch(NumberFormatException e) {
@@ -396,14 +401,14 @@ class GPanel extends JPanel implements MouseListener {
 		flag = false;
 		if (iswhite && !board.userCanMove(TKind.black)) {
 			if(!DISPLAY.equals("none"))			
-				System.out.println("black cant move");
+				System.out.println("black can't move");
 			//showWinner();
 			if(blH)
 				flag = true;
 		}
 		if (!iswhite && !board.userCanMove(TKind.white)) {
 			if(!DISPLAY.equals("none"))
-				System.out.println("white cant move");
+				System.out.println("white can't move");
 			if(whH)
 				flag = true;
 			//showWinner();
@@ -463,13 +468,13 @@ class GPanel extends JPanel implements MouseListener {
 				if(blH && whH)
 					flag = false;
 				if (iswhite && !board.userCanMove(TKind.black)) {
-					System.out.println("black cant move");
+					System.out.println("black can't move");
 					if(blH)
 						flag = true;
 					//showWinner();
 				}
 				if (!iswhite && !board.userCanMove(TKind.white)) {
-					System.out.println("white cant move");
+					System.out.println("white can't move");
 					if(whH)
 						flag = true;
 					//showWinner();
@@ -507,10 +512,10 @@ class GPanel extends JPanel implements MouseListener {
 
 	public void timeup() {
 		if(iswhite) {
-			System.out.println("winner B " + (board.counter[0] - board.counter[1]) + " timeout");	
+			System.out.println("winner Black " + (board.counter[0] - board.counter[1]) + " timeout");	
 		}
 		else {
-			System.out.println("winner W " +  (board.counter[1] - board.counter[0]) + " timeout");	
+			System.out.println("winner White " +  (board.counter[1] - board.counter[0]) + " timeout");	
 		}
 		if(!DISPLAY.equals("none"))
 			System.out.println(gameOverString);
@@ -527,10 +532,10 @@ class GPanel extends JPanel implements MouseListener {
 	public void illegalMove() {
 		if(!FLAG) {
 			if(iswhite) {
-				System.out.println("winner B " +  (board.counter[0] - board.counter[1]) + " Illegal");
+				System.out.println("winner Black " +  (board.counter[0] - board.counter[1]) + " Illegal");
 			}
 			else {
-				System.out.println("winner W " + (board.counter[1] - board.counter[0]) + " Illegal");
+				System.out.println("winner White " + (board.counter[1] - board.counter[0]) + " Illegal");
 			}
 			if(!DISPLAY.equals("none"))
 				System.out.println(gameOverString);

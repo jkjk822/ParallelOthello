@@ -3,14 +3,14 @@ CFLAGS = -O3 -std=c99
 DEPS = structs.h
 SOURCE = $(wildcard *.c)
 OBJECTS = $(SOURCE:.c=.o)
-TARGET = player
+TARGET = play
 
 default: $(TARGET)
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-player: $(OBJECTS)
+play: $(OBJECTS)
 	$(CC) $(CFLAGS) $^ -o $@
 
 clean:

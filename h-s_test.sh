@@ -1,2 +1,2 @@
 #!/bin/bash
-./tournament gui serial -human 8 0 0 
+./tournament gui serial -human 3 0 0 
