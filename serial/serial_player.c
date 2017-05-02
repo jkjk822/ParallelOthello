@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <getopt.h>
 #include <time.h>
 #include <float.h>
 #include <string.h>
@@ -84,6 +85,15 @@ void new_game(){
 	gameState[WHITE] = 0x0000001008000000;
 	gameState[BLACK] = 0x0000000810000000;
 }
+
+/*
+ * Starts a game at the given board position
+ */
+void setup_game(unsigned long long w, unsigned long long b){
+	gameState[WHITE] = w;
+	gameState[BLACK] = b;
+}
+
 
 /*
  * Convert col, row into a long long move
@@ -706,18 +716,30 @@ void make_move(){
 /*
  * Driver function
  */
-int main(){
+int main(int argc, char **argv){
 
     char inbuf[256];
     char playerstring;
-    int x,y;
+    int x,y,c;
     turn = 0;
-    /*unsigned long long board[2];
-	board[WHITE] = 0x3e3efcf8f0e00808;
-	board[BLACK] = 0x000000040c1c0000;
-	printf("w:%016I64x\n", update(board, get_move(5,7), BLACK, 7,5)[WHITE]);//TODO: remove print
-	printf("b:%016I64x\n", update(board, get_move(5,7), BLACK, 7,5)[BLACK]);*/
-	//TODO: Test more
+    new_game(); //Setup default board state
+
+    //Read in initial board state if specified (overwrites new_game)
+	while ((c = getopt(argc, argv, "b:w:")) != -1)
+    switch (c) {
+    case 'b':
+    	gameState[BLACK] = strtoll(optarg, NULL, 16);
+    	break;
+    case 'w':
+    	gameState[WHITE] = strtoll(optarg, NULL, 16);
+    	break;
+    default:
+    	exit(1);
+    }
+
+
+
+
     if (fgets(inbuf, 256, stdin) == NULL){
         error("Couldn't read from inpbuf");
     }
@@ -741,7 +763,6 @@ int main(){
        color = WHITE;
     }
     gameClock = clock();
-    new_game();
 	compute_all_moves(moveTable);
 	calculate_masks(maskTable);
     if (color == BLACK) {
@@ -750,6 +771,7 @@ int main(){
     while (fgets(inbuf, 256, stdin) != NULL) {
         if (strncmp(inbuf, "pass", 4) != 0) {
             if (sscanf(inbuf, "%d %d", &x, &y) != 2) {
+            	fprintf(stderr, "%s\n", "Invalid Input");
                 return 0;
             }
 
