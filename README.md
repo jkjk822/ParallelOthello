@@ -7,6 +7,8 @@ A parallel implementation of Othello
 
 ### With Reversi.jar
 
+    Use: tournament interface player1Folder player2Folder maxDepth timeout1 timeout2
+        -interface: gui, text, or none
 
 
 ### Stand-alone
