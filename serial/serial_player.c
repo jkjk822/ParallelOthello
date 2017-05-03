@@ -336,7 +336,7 @@ double heuristics(unsigned long long board[2], int color){
 		mobilDiff = 100*(playerMobil-opponentMobil)/(playerMobil+opponentMobil);
 	}
 	else
-		return pieceDiff>0?DBL_MAX:-DBL_MAX;
+		return pieceDiff>0?DBL_MAX/1.1:-DBL_MAX/1.1;
 
 	//Find corner diff
 	double playerCorner = iter_count(board[color]&0x8100000000000081u);
@@ -519,7 +519,7 @@ void sort_children(state_t** node, int player){
         current = current->next;
     }
 
-    if (*node == bestNode || bestNode == NULL) {
+    if (*node == bestNode) {
         return;
     }
 

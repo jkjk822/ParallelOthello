@@ -564,11 +564,9 @@ class GPanel extends JPanel implements MouseListener {
 		{
 			try {
 				if (whH && !blH) {
-					blackIn.write("pass\n");
 					blackIn.flush();
 				}
 				if (blH && !whH) {
-					whiteIn.write("pass\n");
 					whiteIn.flush();
 				}
 			}
