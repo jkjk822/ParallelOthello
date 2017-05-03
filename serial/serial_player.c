@@ -9,6 +9,7 @@
 #include <time.h>
 #include <float.h>
 #include <string.h>
+#include <sys/time.h>
 #include "structs.h"
 #define WHITE 0
 #define BLACK 1
@@ -18,7 +19,6 @@
 #define R90 1 //90 degrees right rotation
 #define R45 2 //45 degrees right rotation
 #define L45 3 //45 degrees left rotation
-
 
 clock_t gameClock;
 clock_t frameClock;
@@ -85,15 +85,6 @@ void new_game(){
 	gameState[WHITE] = 0x0000001008000000;
 	gameState[BLACK] = 0x0000000810000000;
 }
-
-/*
- * Starts a game at the given board position
- */
-void setup_game(unsigned long long w, unsigned long long b){
-	gameState[WHITE] = w;
-	gameState[BLACK] = b;
-}
-
 
 /*
  * Convert col, row into a long long move
@@ -375,7 +366,6 @@ double heuristics(unsigned long long board[2], int color){
 unsigned long long flip(unsigned long long w, unsigned long long b, unsigned long long move){
 
 	unsigned long long flipped = 0;
-
 	unsigned long long t = move;
 	unsigned long long flip = 0;
 
@@ -462,6 +452,7 @@ void generate_children(state_t* head, unsigned long long currBoard[2] , unsigned
 	board[WHITE][R0] = currBoard[WHITE];
 	board[BLACK][R0] = currBoard[BLACK];
 	compute_rotations(board);
+
 	while(moves){
 		unsigned long long currMove = moves&(~moves+1);
 		int temp = get_shift(currMove);
@@ -488,8 +479,6 @@ void generate_children(state_t* head, unsigned long long currBoard[2] , unsigned
 	while (cur != NULL) {
 		cur = cur->next;
 	}
-
-
 }
 
 /***********************START special functions***********************/
@@ -502,7 +491,6 @@ void error(char * msg){
 
 //Tests if the game has ended
 int game_over(unsigned long long board[2]){
-
 	return !(generate_moves(board, WHITE)|generate_moves(board, BLACK));
 }
 
@@ -520,7 +508,6 @@ void sort_children(state_t** node, int player){
         current = current->next;
     }
 
-
     current = *node;
     double bestScore = -DBL_MAX;
     state_t* bestNode = NULL;
@@ -532,7 +519,7 @@ void sort_children(state_t** node, int player){
         current = current->next;
     }
 
-    if (*node == bestNode) {
+    if (*node == bestNode || bestNode == NULL) {
         return;
     }
 
@@ -549,7 +536,6 @@ void sort_children(state_t** node, int player){
     }
 
     *node = bestNode;
-
 }
 
 void free_children(state_t* children) {
@@ -569,17 +555,19 @@ double minimax(state_t *node, state_t* bestState, int depth, int currentPlayer,d
     if (depth == 0 || game_over(node->board)) {
         return heuristics(node->board, currentPlayer);
     }
-
+	
     state_t* children = new_state();
 
     generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
 
     sort_children(&children, currentPlayer);//TODO: remove print
+
       //  printf("Children after:");
     //TODO: remove print
    // printChildren(children);
     state_t* current = children;//TODO: remove print
     //printf("is current null?x: %d\n", current->x);
+    
     int p;
     if (depth == 1) {
      	p = 0;
@@ -588,7 +576,7 @@ double minimax(state_t *node, state_t* bestState, int depth, int currentPlayer,d
     }
     while (current != NULL) {
         //recurse on child
-        alpha = -minimax(current,gb, depth-1, abs(currentPlayer-1), -beta, -alpha, p);
+        alpha = -minimax(current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha, p);
 
         //Enemy had no moves
         if (alpha == 1 && id == globalBest->id) {
@@ -619,7 +607,6 @@ double minimax(state_t *node, state_t* bestState, int depth, int currentPlayer,d
 
     free_children(children);
 
-
     return bestResult;
 }
 
@@ -631,7 +618,6 @@ void make_move(){
 	globalBest->score = -DBL_MAX;
     frameClock = clock();
     clock_t beginClock = clock(), deltaClock;
-
 
     state_t* initialState = new_state();
     initialState->board = gameState;
@@ -651,13 +637,11 @@ void make_move(){
                     break;
                 }
             }
-
             minimax(initialState, bestState, depth, color, -DBL_MAX, DBL_MAX,0);
     }
 
     /* Depthlimit is set - we only search to that depth */
     else if (depthlimit > 0) {
-
         minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX,0);
     }
 
@@ -707,6 +691,7 @@ int main(int argc, char **argv){
     char inbuf[256];
     char playerstring;
     int x,y,c;
+    struct timeval start, finish;
     turn = 0;
     new_game(); //Setup default board state
 
@@ -723,13 +708,9 @@ int main(int argc, char **argv){
     	exit(1);
     }
 
-
-
-
     if (fgets(inbuf, 256, stdin) == NULL){
         error("Couldn't read from inpbuf");
     }
-
     if (sscanf(inbuf, "game %c %d %d %d", &playerstring, &depthlimit, &timelimit1, &timelimit2) != 4) {
         error("Bad initial input\nusage: game <color> <depthlimit> <total_timelimit> <turn_timelimit>\n" \
            "    -color: a single char (B/W) representing this player's color. 'W' is default\n" \
@@ -748,19 +729,25 @@ int main(int argc, char **argv){
     } else{
        color = WHITE;
     }
+
     gameClock = clock();
 	compute_all_moves(moveTable);
 	calculate_masks(maskTable);
+
     if (color == BLACK) {
+    	gettimeofday(&start, 0);
         make_move();
+        gettimeofday(&finish, 0);
+        fprintf(stdout, "Time:  %f seconds\n", (finish.tv_sec - start.tv_sec)
+        	+ (finish.tv_usec - start.tv_usec) * 0.000001);
     }
+
     while (fgets(inbuf, 256, stdin) != NULL) {
         if (strncmp(inbuf, "pass", 4) != 0) {
             if (sscanf(inbuf, "%d %d", &x, &y) != 2) {
             	fprintf(stderr, "Invalid Input");
                 return 0;
             }
-
             unsigned long long* temp = update(gameState, get_move(x,y),abs(color-1), x, y);
             gameState[WHITE] = temp[WHITE];
             gameState[BLACK] = temp[BLACK];
