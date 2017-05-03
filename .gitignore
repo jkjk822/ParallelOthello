@@ -1,3 +1,4 @@
 *.o
-player
+play
 *.class
+Reversi.jar
