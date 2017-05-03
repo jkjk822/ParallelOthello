@@ -674,7 +674,7 @@ void make_move(){
         printf("pass\n");
         fflush(stdout);
     } else {
-        printf("%d %d\n", bestState->x, bestState->y);
+        printf("M: %d %d, ", bestState->x, bestState->y);
         fflush(stdout);
 
         unsigned long long* temp = update(gameState, get_move(bestState->x, bestState->y), color, bestState->x, bestState->y);
@@ -738,7 +738,7 @@ int main(int argc, char **argv){
     	gettimeofday(&start, 0);
         make_move();
         gettimeofday(&finish, 0);
-        fprintf(stdout, "Time:  %f seconds\n", (finish.tv_sec - start.tv_sec)
+        fprintf(stdout, "Time: %f seconds, ", (finish.tv_sec - start.tv_sec)
         	+ (finish.tv_usec - start.tv_usec) * 0.000001);
     }
 
