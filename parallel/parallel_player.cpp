@@ -8,7 +8,8 @@
 #include <getopt.h>
 #include <time.h>
 #include <float.h>
-#include <string.h>
+#include <string>
+#include <cstring>
 #include "structs.h"
 #define WHITE 0
 #define BLACK 1
@@ -23,6 +24,7 @@
 #include <omp.h>
 #define OMP_NUM_THREADS 8;
 
+using namespace std;
 
 clock_t gameClock;
 clock_t frameClock;
@@ -32,7 +34,7 @@ int depthlimit, timelimit1, timelimit2;
 int turn;
 int totalStates = 0;
 int times[] = {10,10,10,10,10,20,50,100,1000,10000,80000, 200000, 2000000, 2000000};
-pair_t* globalBest;
+pair<int, double> globalBest;
 
 unsigned char mask[8] = {0xffu,0xfeu,0xfcu,0xf8u,0xf0u,0xe0u,0xc0u,0x80u}; //mask out, respectively, no bit, far right bit, far right 2 bits, etc.
 unsigned char moveTable[256][256][2]; //stores all moves (by row) based on [white row config][black row config][color to move]
@@ -64,13 +66,12 @@ unsigned int bit_count(unsigned long long board){
 /*
  * Helper function create a new state struct
  */
-state_t* new_state() {
-    state_t *s = NULL;
-    s = malloc(sizeof(state_t));
+state* new_state() {
+    state* s = new state;
     s->next = NULL;
 
     // Zero out the board
-    s->board = malloc(sizeof(unsigned long long)*2);
+    s->board = (unsigned long long *)malloc(sizeof(unsigned long long)*2);
     s->board[WHITE] = 0;
     s->board[BLACK] = 0;
 
@@ -89,15 +90,6 @@ void new_game(){
 	gameState[WHITE] = 0x0000001008000000;
 	gameState[BLACK] = 0x0000000810000000;
 }
-
-/*
- * Starts a game at the given board position
- */
-void setup_game(unsigned long long w, unsigned long long b){
-	gameState[WHITE] = w;
-	gameState[BLACK] = b;
-}
-
 
 /*
  * Convert col, row into a long long move
@@ -430,11 +422,9 @@ unsigned long long flip(unsigned long long w, unsigned long long b, unsigned lon
  * Generate a child given current board, next move, color to move, col of move, and row of move
  */
 unsigned long long* generate_child(unsigned long long board[2][4], unsigned long long move, int color, int x, int y){
-	unsigned long long* newBoard;
-	newBoard = malloc(sizeof(unsigned long long)*2);
+	unsigned long long* newBoard = (unsigned long long*) malloc(sizeof(unsigned long long)*2);
 
-	unsigned long long flipped;
-	flipped =
+	unsigned long long flipped =
 			flip(board[color][R0]&maskTable[x][y][R0], board[abs(color-1)][R0]&maskTable[x][y][R0],move)
 			|l90(flip(board[color][R90]&maskTable[x][y][R90], board[abs(color-1)][R90]&maskTable[x][y][R90],r90(move)))
 			|l45(flip(board[color][R45]&maskTable[x][y][R45], board[abs(color-1)][R45]&maskTable[x][y][R45],r45(move)))
@@ -459,9 +449,9 @@ unsigned long long* update(unsigned long long currBoard[2], unsigned long long m
 /*
  * Generate all children and store in linked list given by head, with current board, board of possible moves, and color to move
  */
-void generate_children(state_t* head, unsigned long long currBoard[2] , unsigned long long moves, int color){
+void generate_children(state* head, unsigned long long currBoard[2] , unsigned long long moves, int color){
 
-	state_t* previous = head;
+	state* previous = head;
 	unsigned long long board[2][4];
 	board[WHITE][R0] = currBoard[WHITE];
 	board[BLACK][R0] = currBoard[BLACK];
@@ -474,13 +464,13 @@ void generate_children(state_t* head, unsigned long long currBoard[2] , unsigned
 		previous->board = generate_child(board, currMove, color, previous->x, previous->y);
 		moves&=moves-1;
 
-		state_t* currentState = new_state();
+		state* currentState = new_state();
 		previous->next = currentState;
 		previous = currentState;
 		totalStates++;
 	}
 
-	state_t* cur = head;
+	state* cur = head;
 	while (cur->next != NULL) {
 	if (cur->next->x == -1) {
         	cur->next = NULL;
@@ -499,7 +489,7 @@ void generate_children(state_t* head, unsigned long long currBoard[2] , unsigned
 /***********************START special functions***********************/
 
 //Prints msg as error
-void error(char * msg){
+void error(string msg){
     fprintf(stderr,"%s\n", msg);
     exit(-1);
 }
@@ -516,9 +506,9 @@ int game_over(unsigned long long board[2]){
 /*
 * Gets the best child to the head of the list (NOT a full sort)
 */
-void sort_children(state_t** node, int player){
+void sort_children(state** node, int player){
 
-    state_t* current = *node;
+    state* current = *node;
     while (current != NULL) {
         current->val = heuristics(current->board, player);
         current = current->next;
@@ -527,7 +517,7 @@ void sort_children(state_t** node, int player){
 
     current = *node;
     double bestScore = -DBL_MAX;
-    state_t* bestNode = NULL;
+    state* bestNode = NULL;
     while (current != NULL) {
         if (current->val > bestScore) {
             bestScore = current->val;
@@ -556,25 +546,25 @@ void sort_children(state_t** node, int player){
 
 }
 
-void free_children(state_t* children) {
-    state_t* node = children;
+void free_children(state* children) {
+    state* node = children;
     while (node != NULL) {
-        state_t* temp = node;
+        state* temp = node;
         node = node->next;
         free(temp);
     }
     children = NULL;
 }
 
-double minimax(state_t *node, state_t* bestState, int depth, int currentPlayer,double alpha, double beta, int id) {
+double minimax(state *node, state* bestState, int depth, int currentPlayer,double alpha, double beta, int id) {
 
     double bestResult = -DBL_MAX;
-    state_t* gb = new_state();
+    state* gb = new_state();
     if (depth == 0 || game_over(node->board)) {
         return heuristics(node->board, currentPlayer);
     }
 
-    state_t* children = new_state();
+    state* children = new_state();
 
     generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
 
@@ -582,7 +572,7 @@ double minimax(state_t *node, state_t* bestState, int depth, int currentPlayer,d
       //  printf("Children after:");
     //TODO: remove print
    // printChildren(children);
-    state_t* current = children;//TODO: remove print
+    state* current = children;//TODO: remove print
     //printf("is current null?x: %d\n", current->x);
     int p;
     if (depth == 1) {
@@ -590,13 +580,12 @@ double minimax(state_t *node, state_t* bestState, int depth, int currentPlayer,d
     }else {
         p = id;
     }
-    #pragma omp parallel for num_threads(OMP_NUM_THREADS) schedule(dynamic) private(alpha, beta)
     while (current != NULL) {
         //recurse on child
         alpha = -minimax(current,gb, depth-1, abs(currentPlayer-1), -beta, -alpha, p);
 
         //Enemy had no moves
-        if (alpha == 1 && id == globalBest->id) {
+        if (alpha == 1 && id == globalBest.first) {
         	bestState->board = current->board;
             bestState->x = current->x;
             bestState->y = current->y;
@@ -607,8 +596,8 @@ double minimax(state_t *node, state_t* bestState, int depth, int currentPlayer,d
         }
         if (alpha > bestResult)
         {
-            globalBest->score = alpha;
-            globalBest->id = p;
+            globalBest.second = alpha;
+            globalBest.first = p;
             bestResult = alpha;
             bestState->board = current->board;
             bestState->x = current->x;
@@ -631,19 +620,17 @@ double minimax(state_t *node, state_t* bestState, int depth, int currentPlayer,d
 
 void make_move(){
 
-    globalBest = malloc(sizeof(struct pair));
-    globalBest->id = 0;
-	globalBest->score = -DBL_MAX;
+    globalBest = make_pair(0, -DBL_MAX);
     frameClock = clock();
     clock_t beginClock = clock(), deltaClock;
 
 
-    state_t* initialState = new_state();
+    state* initialState = new_state();
     initialState->board = gameState;
    // printf("w:%016I64x\n",initialState->board[WHITE]);//TODO: remove print
    // printf("b:%016I64x\n",initialState->board[BLACK]);
 
-    state_t* bestState = new_state();
+    state* bestState = new_state();
     /* Timelimit2 is set - overall game time */
     if (timelimit2 > 0) {
             clock_t timePassed= clock() - gameClock;
