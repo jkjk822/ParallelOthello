@@ -4,6 +4,7 @@
  */
 
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <getopt.h>
 #include <time.h>
@@ -20,9 +21,6 @@
 #define R45 2 //45 degrees right rotation
 #define L45 3 //45 degrees left rotation
 
-
-#include <omp.h>
-#define OMP_NUM_THREADS 8;
 
 using namespace std;
 
@@ -514,7 +512,6 @@ void sort_children(state** node, int player){
         current = current->next;
     }
 
-
     current = *node;
     double bestScore = -DBL_MAX;
     state* bestNode = NULL;
@@ -526,13 +523,11 @@ void sort_children(state** node, int player){
         current = current->next;
     }
 
-    if (*node == bestNode) {
+    if (*node == bestNode || bestNode == NULL) {
         return;
     }
-
     current = *node;
     while (current != NULL) {//TODO: remove print
-    	//printf("Current val %.2f\n", current->val);
         if (current->next == bestNode) {
             current->next = bestNode->next;
             bestNode->next = *node;
@@ -565,7 +560,6 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer,doubl
     }
 
     state* children = new_state();
-
     generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
 
     sort_children(&children, currentPlayer);//TODO: remove print
