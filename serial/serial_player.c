@@ -329,9 +329,7 @@ double heuristics(unsigned long long board[2], int color){
 	double opponentPieces = bit_count(board[abs(color-1)]);
 	double pieceDiff = 0;
 
-	if(playerPieces+opponentPieces != 0) {
-		pieceDiff = 100*(playerPieces-opponentPieces)/(playerPieces+opponentPieces);
-	}
+	pieceDiff = 100*(playerPieces-opponentPieces)/(playerPieces+opponentPieces);
 
 	//Find mobility diff
 	unsigned long long rBoard[2][4];
@@ -346,12 +344,14 @@ double heuristics(unsigned long long board[2], int color){
 	if(playerMobil+opponentMobil != 0) {
 		mobilDiff = 100*(playerMobil-opponentMobil)/(playerMobil+opponentMobil);
 	}
+	else
+		return pieceDiff>0?DBL_MAX:-DBL_MAX;
 
 	//Find corner diff
 	double playerCorner = iter_count(board[color]&0x8100000000000081u);
 	double opponentCorner = iter_count(board[abs(color-1)]&0x8100000000000081u);
-
 	double cornerDiff = 0;
+
 	if ((playerCorner+opponentCorner) != 0) {
 		cornerDiff = 100*(playerCorner-opponentCorner)/(playerCorner+opponentCorner);
 	}
@@ -360,8 +360,8 @@ double heuristics(unsigned long long board[2], int color){
 	//TODO: see if this calculation method is correct
 	double playerCloseCorner = bit_count(board[color]&0x42c300000000c342u);
 	double opponentCloseCorner = bit_count(board[abs(color-1)]&0x42c300000000c342u);
-
 	double closeCornerDiff = 0;
+
 	if ((playerCloseCorner+opponentCloseCorner) != 0) {
 		closeCornerDiff = -12.5*(playerCloseCorner-opponentCloseCorner);
 	}
@@ -499,15 +499,7 @@ void error(char * msg){
     fprintf(stderr,"%s\n", msg);
     exit(-1);
 }
-//Tests if time is up
-int timeUp() {
-    if (timelimit1 == 0) {
-        return FALSE;
-    }
-    clock_t time = clock() - frameClock;
-    int msec = time * 1000 / CLOCKS_PER_SEC;
-    return (timelimit1 - msec) < 200;
-}
+
 //Tests if the game has ended
 int game_over(unsigned long long board[2]){
 
@@ -517,6 +509,9 @@ int game_over(unsigned long long board[2]){
 /************************END special functions************************/
 
 
+/*
+* Gets the best child to the head of the list (NOT a full sort)
+*/
 void sort_children(state_t** node, int player){
 
     state_t* current = *node;
@@ -553,7 +548,7 @@ void sort_children(state_t** node, int player){
         current=current->next;
     }
 
-     *node = bestNode;
+    *node = bestNode;
 
 }
 
@@ -567,13 +562,7 @@ void free_children(state_t* children) {
     children = NULL;
 }
 
-double minimax(state_t *node,state_t* bestState, int depth, int currentPlayer,double alpha, double beta, int id) {
-
-
-    if (timeUp()) {
-        return -1;
-    }
-
+double minimax(state_t *node, state_t* bestState, int depth, int currentPlayer,double alpha, double beta, int id) {
 
     double bestResult = -DBL_MAX;
     state_t* gb = new_state();
@@ -598,12 +587,10 @@ double minimax(state_t *node,state_t* bestState, int depth, int currentPlayer,do
         p = id;
     }
     while (current != NULL) {
-        if (timeUp()) {
-
-            return -1;
-        }
         //recurse on child
-        alpha = -minimax(current,gb, depth - 1, abs(currentPlayer-1), -beta, -alpha, p);
+        alpha = -minimax(current,gb, depth-1, abs(currentPlayer-1), -beta, -alpha, p);
+
+        //Enemy had no moves
         if (alpha == 1 && id == globalBest->id) {
         	bestState->board = current->board;
             bestState->x = current->x;
@@ -615,7 +602,6 @@ double minimax(state_t *node,state_t* bestState, int depth, int currentPlayer,do
         }
         if (alpha > bestResult)
         {
-
             globalBest->score = alpha;
             globalBest->id = p;
             bestResult = alpha;
@@ -690,7 +676,7 @@ void make_move(){
             deltaClock = clock() - beginClock;
             int msec = deltaClock * 1000 / CLOCKS_PER_SEC;
             int dif = timelimit1 - msec;
-            printf("we have %d left, and timeneeded for next level is %d\n", dif, timeNeeded);
+            printf("we have %d left, and time needed for next level is %d\n", dif, timeNeeded);
             if (timeNeeded > dif) {
                 break;
             }
@@ -771,7 +757,7 @@ int main(int argc, char **argv){
     while (fgets(inbuf, 256, stdin) != NULL) {
         if (strncmp(inbuf, "pass", 4) != 0) {
             if (sscanf(inbuf, "%d %d", &x, &y) != 2) {
-            	fprintf(stderr, "%s\n", "Invalid Input");
+            	fprintf(stderr, "Invalid Input");
                 return 0;
             }
 
