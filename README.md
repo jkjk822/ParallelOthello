@@ -1,7 +1,8 @@
 # ParallelOthello
 A parallel implementation of Othello
 
-
+https://github.com/vit-vit/ctpl
+http://stackoverflow.com/questions/15752659/thread-pooling-in-c11
 
 ## Running
 

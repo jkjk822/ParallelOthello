@@ -11,6 +11,7 @@
 #include <cfloat>
 #include <string>
 #include <cstring>
+#include "ctpl.h"
 #include "structs.h"
 #define WHITE 0
 #define BLACK 1
@@ -39,6 +40,7 @@ unsigned char moveTable[256][256][2]; //stores all moves (by row) based on [whit
 unsigned long long maskTable[8][8][4]; //stores all shift masks for any given move location
 unsigned long long gameState[2];
 
+ctpl::thread_pool pool(8);
 
 /*
  * Counts bits iteratively
@@ -568,6 +570,8 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer,doubl
    // printChildren(children);
     state* current = children;//TODO: remove print
     //printf("is current null?x: %d\n", current->x);
+
+
     int p;
     if (depth == 1) {
      	p = 0;

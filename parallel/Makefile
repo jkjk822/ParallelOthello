@@ -1,7 +1,7 @@
 CC = g++
-CFLAGS = -O3 -std=c++11
+CFLAGS = -O3 -pthread -std=c++11
 DEBUG = -g
-DEPS = structs.h
+DEPS = structs.h ctpl.h
 SOURCE = $(wildcard *.cpp)
 OBJECTS = $(SOURCE:.cpp=.o)
 TARGET = play
