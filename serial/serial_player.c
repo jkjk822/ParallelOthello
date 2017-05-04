@@ -574,18 +574,11 @@ double minimax(state_t *node, state_t* bestState, int depth, int currentPlayer, 
     }else {
         p = id;
     }
+
     while (current != NULL) {
         //recurse on child
         double result = -minimax(current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha, p);
-        if(depth == 6)
-        	printf("Update? %lf %d%d\n", result, current->x, current->y);
-        //Enemy had no moves
-        if (result == 1 && id == globalBest->id) {
-        	bestState->board = current->board;
-            bestState->x = current->x;
-            bestState->y = current->y;
-            return -1;
-        }
+
         if (result >= beta) {
             return beta;
         }
@@ -642,8 +635,8 @@ void make_move(){
 
     /* Depthlimit is set - we only search to that depth */
     else if (depthlimit > 0) {
-    	// minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX,0);
-        printf("Final: %lf\n", minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX,0));
+    	minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX,0);
+        // printf("Final: %g\n", minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX,0));
     }
 
     /* Time per move is set */

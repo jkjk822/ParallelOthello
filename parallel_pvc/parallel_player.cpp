@@ -574,12 +574,12 @@ double minimax_serial(int thread_id, state* node, state* bestState, int depth, i
 		double result = -minimax_serial(thread_id, current, bestState, depth-1, abs(currentPlayer-1), -beta, -alpha, p);
 
 		//Enemy had no moves
-		if (result == 1 && id == globalBest.first) {
+		/*if (result == 1 && id == globalBest.first) {
 			bestState->board = current->board;
 			bestState->x = current->x;
 			bestState->y = current->y;
 			return -1;
-		}
+		}*/
 		if (result >= beta) {
 			return beta;
 		}
@@ -629,13 +629,6 @@ double minimax(state* node, state* bestState, int depth, int currentPlayer,doubl
 	//recurse on child
 	double result = -minimax(current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha, p);
 
-	//Enemy had no moves
-	if (result == 1 && id == globalBest.first) {
-		bestState->board = current->board;
-		bestState->x = current->x;
-		bestState->y = current->y;
-		return -1;
-	}
 	if (result >= beta) {
 		return beta;
 	}
@@ -656,7 +649,7 @@ double minimax(state* node, state* bestState, int depth, int currentPlayer,doubl
 	vector<future<double>> results;
 	results.reserve(10); //10 is average branching factor
 
-	cout << "Initial Best " << result << endl;
+	// cout << "Initial Best " << result << endl;
 
 	while(current != NULL){
 		// if(ctpl::n_idle() > 0){
@@ -675,7 +668,7 @@ double minimax(state* node, state* bestState, int depth, int currentPlayer,doubl
 			result = val;
 			bestChild = current;
 		}
-		cout << "Update? " << val << " " << current->x << current->y << endl;
+		// cout << "Update? " << val << " " << current->x << current->y << endl;
 		current = current->next;
 	}
 
@@ -729,8 +722,8 @@ void make_move(){
 
 	/* Depthlimit is set - we only search to that depth */
 	else if (depthlimit > 0) {
-		// minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX,0);
-		printf("Final: %lf\n", minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX,0));
+		minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX,0);
+		// printf("Final: %g\n", minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX,0));
 	}
 
 	/* Time per move is set */
