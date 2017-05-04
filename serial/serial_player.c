@@ -63,8 +63,7 @@ unsigned int bit_count(unsigned long long board){
  * Helper function create a new state struct
  */
 state_t* new_state() {
-	state_t *s = NULL;
-	s = malloc(sizeof(state_t));
+	state_t *s = malloc(sizeof(state_t));
 	s->next = NULL;
 
 	// Zero out the board
@@ -418,8 +417,7 @@ unsigned long long flip(unsigned long long w, unsigned long long b, unsigned lon
 unsigned long long* generate_child(unsigned long long board[2][4], unsigned long long move, int color, int x, int y){
 	unsigned long long* newBoard = malloc(sizeof(unsigned long long)*2);
 
-	unsigned long long flipped;
-	flipped =
+	unsigned long long flipped =
 			flip(board[color][R0]&maskTable[x][y][R0], board[abs(color-1)][R0]&maskTable[x][y][R0],move)
 			|l90(flip(board[color][R90]&maskTable[x][y][R90], board[abs(color-1)][R90]&maskTable[x][y][R90],r90(move)))
 			|l45(flip(board[color][R45]&maskTable[x][y][R45], board[abs(color-1)][R45]&maskTable[x][y][R45],r45(move)))
@@ -519,8 +517,7 @@ void sort_children(state_t** node, int player){
 	}
 
 	current = *node;
-	while (current != NULL) {//TODO: remove print
-		//printf("Current val %.2f\n", current->val);
+	while (current != NULL) {
 		if (current->next == bestNode) {
 			current->next = bestNode->next;
 			bestNode->next = *node;
@@ -539,8 +536,8 @@ void free_children(state_t* children) {
 		state_t* temp = node;
 		node = node->next;
 		free(temp);
+		temp = NULL;
 	}
-	children = NULL;
 }
 
 double minimax(state_t *node, state_t* bestState, int depth, int currentPlayer, double alpha, double beta, int id) {
@@ -701,6 +698,7 @@ int main(int argc, char **argv){
 	default:
 		exit(1);
 	}
+
 
 	if (fgets(inbuf, 256, stdin) == NULL){
 		error("Couldn't read from inpbuf");

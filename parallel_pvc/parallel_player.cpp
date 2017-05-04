@@ -4,13 +4,14 @@
  */
 
 #include <stdio.h>
-#include <iostream>
 #include <stdlib.h>
 #include <getopt.h>
 #include <time.h>
 #include <cfloat>
-#include <string>
 #include <cstring>
+#include <sys/time.h>
+#include <string>
+#include <iostream>
 #include "ctpl.h"
 #include "structs.h"
 #define WHITE 0
@@ -341,7 +342,7 @@ double heuristics(unsigned long long board[2], int color){
 		mobilDiff = 100*(playerMobil-opponentMobil)/(playerMobil+opponentMobil);
 	}
 	else
-		return pieceDiff>0?DBL_MAX/1.1:DBL_MAX/1.1;
+		return pieceDiff>0?DBL_MAX/1.1:-DBL_MAX/1.1;
 
 	//Find corner diff
 	double playerCorner = iter_count(board[color]&0x8100000000000081u);
@@ -477,8 +478,7 @@ void generate_children(state* head, unsigned long long currBoard[2] , unsigned l
 			break;
 		}
 		cur = cur->next;
-   	}
-
+	}
 }
 
 /***********************START special functions***********************/
@@ -524,7 +524,7 @@ void sort_children(state** node, int player){
 		return;
 	}
 	current = *node;
-	while (current != NULL) {//TODO: remove print
+	while (current != NULL) {
 		if (current->next == bestNode) {
 			current->next = bestNode->next;
 			bestNode->next = *node;
@@ -535,7 +535,6 @@ void sort_children(state** node, int player){
 	}
 
 	*node = bestNode;
-
 }
 
 void free_list(state* list) {
@@ -718,7 +717,6 @@ void make_move(){
 					break;
 				}
 			}
-
 			minimax(initialState, bestState, depth, color, -DBL_MAX, DBL_MAX,0);
 	}
 
@@ -757,12 +755,14 @@ void make_move(){
 		printf("pass\n");
 		fflush(stdout);
 	} else {
-		printf("%d %d\n", bestState->x, bestState->y);
+		if(verbose)
+			printf("M: %d %d\n", bestState->x, bestState->y);
+		else
+			printf("%d %d\n", bestState->x, bestState->y);
 		fflush(stdout);
 
-		unsigned long long* temp = update(gameState, get_move(bestState->x, bestState->y), color, bestState->x, bestState->y);
-		gameState[WHITE] = temp[WHITE];
-		gameState[BLACK] = temp[BLACK];
+		gameState[WHITE] = bestState->board[WHITE];
+		gameState[BLACK] = bestState->board[BLACK];
 	}
 }
 
@@ -774,11 +774,12 @@ int main(int argc, char **argv){
 	char inbuf[256];
 	char playerstring;
 	int x,y,c;
+	struct timeval start, finish;
 	turn = 0;
 	new_game(); //Setup default board state
 
 	//Read in initial board state if specified (overwrites new_game)
-	while ((c = getopt(argc, argv, "b:w:")) != -1)
+	while ((c = getopt(argc, argv, "b:w:v::")) != -1)
 	switch (c) {
 	case 'b':
 		gameState[BLACK] = strtoll(optarg, NULL, 16);
@@ -794,12 +795,9 @@ int main(int argc, char **argv){
 	}
 
 
-
-
 	if (fgets(inbuf, 256, stdin) == NULL){
 		error("Couldn't read from inpbuf");
 	}
-
 	if (sscanf(inbuf, "game %c %d %d %d", &playerstring, &depthlimit, &timelimit1, &timelimit2) != 4) {
 		error("Bad initial input\nusage: game <color> <depthlimit> <total_timelimit> <turn_timelimit>\n" \
 		   "    -color: a single char (B/W) representing this player's color. 'W' is default\n" \
@@ -818,6 +816,7 @@ int main(int argc, char **argv){
 	} else{
 	   color = WHITE;
 	}
+
 	gameClock = clock();
 	compute_all_moves(moveTable);
 	calculate_masks(maskTable);
@@ -830,13 +829,13 @@ int main(int argc, char **argv){
 			fprintf(stdout, "Time: %f seconds, ", (finish.tv_sec - start.tv_sec)
 				+ (finish.tv_usec - start.tv_usec) * 0.000001);
 	}
+
 	while (fgets(inbuf, 256, stdin) != NULL) {
 		if (strncmp(inbuf, "pass", 4) != 0) {
 			if (sscanf(inbuf, "%d %d", &x, &y) != 2) {
 				fprintf(stderr, "Invalid Input");
 				return 0;
 			}
-
 			unsigned long long* temp = update(gameState, get_move(x,y),abs(color-1), x, y);
 			gameState[WHITE] = temp[WHITE];
 			gameState[BLACK] = temp[BLACK];
