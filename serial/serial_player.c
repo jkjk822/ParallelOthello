@@ -35,6 +35,8 @@ unsigned char moveTable[256][256][2]; //stores all moves (by row) based on [whit
 unsigned long long maskTable[8][8][4]; //stores all shift masks for any given move location
 unsigned long long gameState[2];
 
+int verbose = FALSE; //Print timings for testing
+
 
 /*
  * Counts bits iteratively
@@ -61,21 +63,19 @@ unsigned int bit_count(unsigned long long board){
  * Helper function create a new state struct
  */
 state_t* new_state() {
-    state_t *s = NULL;
-    s = malloc(sizeof(state_t));
-    s->next = NULL;
+	state_t *s = NULL;
+	s = malloc(sizeof(state_t));
+	s->next = NULL;
 
-    // Zero out the board
-    s->board = malloc(sizeof(unsigned long long)*2);
-    s->board[WHITE] = 0;
-    s->board[BLACK] = 0;
+	// Zero out the board
+	s->board = malloc(sizeof(unsigned long long)*2);
+	s->board[WHITE] = 0;
+	s->board[BLACK] = 0;
 
-    s->x = -1;
-    s->y = -1;
-    s->alpha = 0;
-    s->beta = 0;
-    s->val = 0;
-    return s;
+	s->x = -1;
+	s->y = -1;
+	s->val = 0;
+	return s;
 }
 
 /*
@@ -416,8 +416,7 @@ unsigned long long flip(unsigned long long w, unsigned long long b, unsigned lon
  * Generate a child given current board, next move, color to move, col of move, and row of move
  */
 unsigned long long* generate_child(unsigned long long board[2][4], unsigned long long move, int color, int x, int y){
-	unsigned long long* newBoard;
-	newBoard = malloc(sizeof(unsigned long long)*2);
+	unsigned long long* newBoard = malloc(sizeof(unsigned long long)*2);
 
 	unsigned long long flipped;
 	flipped =
@@ -469,14 +468,10 @@ void generate_children(state_t* head, unsigned long long currBoard[2] , unsigned
 
 	state_t* cur = head;
 	while (cur->next != NULL) {
-	if (cur->next->x == -1) {
-        	cur->next = NULL;
-		break;
-	}
-   	cur = cur->next;
-   }
-   cur = head;
-	while (cur != NULL) {
+		if (cur->next->x == -1) {
+				cur->next = NULL;
+			break;
+		}
 		cur = cur->next;
 	}
 }
@@ -485,8 +480,8 @@ void generate_children(state_t* head, unsigned long long currBoard[2] , unsigned
 
 //Prints msg as error
 void error(char * msg){
-    fprintf(stderr,"%s\n", msg);
-    exit(-1);
+	fprintf(stderr,"%s\n", msg);
+	exit(-1);
 }
 
 //Tests if the game has ended
@@ -502,178 +497,181 @@ int game_over(unsigned long long board[2]){
 */
 void sort_children(state_t** node, int player){
 
-    state_t* current = *node;
-    while (current != NULL) {
-        current->val = heuristics(current->board, player);
-        current = current->next;
-    }
+	state_t* current = *node;
+	while (current != NULL) {
+		current->val = heuristics(current->board, player);
+		current = current->next;
+	}
 
-    current = *node;
-    double bestScore = -DBL_MAX;
-    state_t* bestNode = NULL;
-    while (current != NULL) {
-        if (current->val > bestScore) {
-            bestScore = current->val;
-            bestNode = current;
-        }
-        current = current->next;
-    }
+	current = *node;
+	double bestScore = -DBL_MAX;
+	state_t* bestNode = NULL;
+	while (current != NULL) {
+		if (current->val > bestScore) {
+			bestScore = current->val;
+			bestNode = current;
+		}
+		current = current->next;
+	}
 
-    if (*node == bestNode) {
-        return;
-    }
+	if (*node == bestNode) {
+		return;
+	}
 
-    current = *node;
-    while (current != NULL) {//TODO: remove print
-    	//printf("Current val %.2f\n", current->val);
-        if (current->next == bestNode) {
-            current->next = bestNode->next;
-            bestNode->next = *node;
-            break;
-        }
+	current = *node;
+	while (current != NULL) {//TODO: remove print
+		//printf("Current val %.2f\n", current->val);
+		if (current->next == bestNode) {
+			current->next = bestNode->next;
+			bestNode->next = *node;
+			break;
+		}
 
-        current=current->next;
-    }
+		current=current->next;
+	}
 
-    *node = bestNode;
+	*node = bestNode;
 }
 
 void free_children(state_t* children) {
-    state_t* node = children;
-    while (node != NULL) {
-        state_t* temp = node;
-        node = node->next;
-        free(temp);
-    }
-    children = NULL;
+	state_t* node = children;
+	while (node != NULL) {
+		state_t* temp = node;
+		node = node->next;
+		free(temp);
+	}
+	children = NULL;
 }
 
 double minimax(state_t *node, state_t* bestState, int depth, int currentPlayer, double alpha, double beta, int id) {
-    
-    if (depth == 0 || game_over(node->board)) {
-        return heuristics(node->board, currentPlayer);
-    }
-
-    state_t* gb = new_state();
 	
-    state_t* children = new_state();
+	if (depth == 0 || game_over(node->board)) {
+		return heuristics(node->board, currentPlayer);
+	}
 
-    generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
+	state_t* gb = new_state();
+	
+	state_t* children = new_state();
 
-    sort_children(&children, currentPlayer);//TODO: remove print
+	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
 
-      //  printf("Children after:");
-    //TODO: remove print
+	sort_children(&children, currentPlayer);//TODO: remove print
+
+	  //  printf("Children after:");
+	//TODO: remove print
    // printChildren(children);
-    state_t* current = children;//TODO: remove print
-    //printf("is current null?x: %d\n", current->x);
-    
-    int p;
-    if (depth == 1) {
-     	p = 0;
-    }else {
-        p = id;
-    }
+	state_t* current = children;//TODO: remove print
+	//printf("is current null?x: %d\n", current->x);
+	
+	int p;
+	if (depth == 1) {
+		p = 0;
+	}else {
+		p = id;
+	}
 
-    while (current != NULL) {
-        //recurse on child
-        double result = -minimax(current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha, p);
+	while (current != NULL) {
+		//recurse on child
+		double result = -minimax(current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha, p);
 
-        if (result >= beta) {
-            return beta;
-        }
-        if (result > alpha) {
-            globalBest->score = result;
-            globalBest->id = p;
-            alpha = result;
-            bestState->board = current->board;
-            bestState->x = current->x;
-            bestState->y = current->y;
-        }
+		if (result >= beta) {
+			return beta;
+		}
+		if (result > alpha) {
+			globalBest->score = result;
+			globalBest->id = p;
+			alpha = result;
+			bestState->board = current->board;
+			bestState->x = current->x;
+			bestState->y = current->y;
+		}
 
-        if (depth == 1)
-        	p++;
+		if (depth == 1)
+			p++;
 
-       	//go to next child
-        current = current->next;
-    }
-    free(gb);
-    free_children(children);
+		//go to next child
+		current = current->next;
+	}
+	free(gb);
+	free_children(children);
 
-    return alpha;
+	return alpha;
 }
 
 
 void make_move(){
 
-    globalBest = malloc(sizeof(struct pair));
-    globalBest->id = 0;
+	globalBest = malloc(sizeof(struct pair));
+	globalBest->id = 0;
 	globalBest->score = -DBL_MAX;
-    frameClock = clock();
-    clock_t beginClock = clock(), deltaClock;
+	frameClock = clock();
+	clock_t beginClock = clock(), deltaClock;
 
-    state_t* initialState = new_state();
-    initialState->board = gameState;
+	state_t* initialState = new_state();
+	initialState->board = gameState;
    // printf("w:%016I64x\n",initialState->board[WHITE]);//TODO: remove print
    // printf("b:%016I64x\n",initialState->board[BLACK]);
 
-    state_t* bestState = new_state();
-    /* Timelimit2 is set - overall game time */
-    if (timelimit2 > 0) {
-            clock_t timePassed= clock() - gameClock;
-            int msec = timelimit2 - (timePassed * 1000 / CLOCKS_PER_SEC);
+	state_t* bestState = new_state();
+	/* Timelimit2 is set - overall game time */
+	if (timelimit2 > 0) {
+			clock_t timePassed= clock() - gameClock;
+			int msec = timelimit2 - (timePassed * 1000 / CLOCKS_PER_SEC);
 
-            int depth = 0;
-            for (int i = 0; i < 14; i++) {
-                if (times[i] > msec) {
-                    depth = i - 2;
-                    break;
-                }
-            }
-            minimax(initialState, bestState, depth, color, -DBL_MAX, DBL_MAX,0);
-    }
+			int depth = 0;
+			for (int i = 0; i < 14; i++) {
+				if (times[i] > msec) {
+					depth = i - 2;
+					break;
+				}
+			}
+			minimax(initialState, bestState, depth, color, -DBL_MAX, DBL_MAX,0);
+	}
 
-    /* Depthlimit is set - we only search to that depth */
-    else if (depthlimit > 0) {
-    	minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX,0);
-        // printf("Final: %g\n", minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX,0));
-    }
+	/* Depthlimit is set - we only search to that depth */
+	else if (depthlimit > 0) {
+		minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX,0);
+		// printf("Final: %g\n", minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX,0));
+	}
 
-    /* Time per move is set */
-    else {
-        minimax(initialState, bestState, 10, color, -DBL_MAX, DBL_MAX, 0);
+	/* Time per move is set */
+	else {
+		minimax(initialState, bestState, 10, color, -DBL_MAX, DBL_MAX, 0);
 
 /*
-        for (int i = 1; i <15; i++) {
-            int timeNeeded = times[i+1];
-            clock_t start = clock(), diff;
-            minimax(initialState, bestState, i, me, -DBL_MAX, DBL_MAX);
-            diff = clock() - start;
-            int msec2 = diff * 1000 / CLOCKS_PER_SEC;
-            printf("Time taken %d seconds %d milliseconds for level %d searching %d states\n", msec2/1000, msec2%1000, i, totalStates);
-            deltaClock = clock() - beginClock;
-            int msec = deltaClock * 1000 / CLOCKS_PER_SEC;
-            int dif = timelimit1 - msec;
-            printf("we have %d left, and time needed for next level is %d\n", dif, timeNeeded);
-            if (timeNeeded > dif) {
-                break;
-            }
-        }
-        */
+		for (int i = 1; i <15; i++) {
+			int timeNeeded = times[i+1];
+			clock_t start = clock(), diff;
+			minimax(initialState, bestState, i, me, -DBL_MAX, DBL_MAX);
+			diff = clock() - start;
+			int msec2 = diff * 1000 / CLOCKS_PER_SEC;
+			printf("Time taken %d seconds %d milliseconds for level %d searching %d states\n", msec2/1000, msec2%1000, i, totalStates);
+			deltaClock = clock() - beginClock;
+			int msec = deltaClock * 1000 / CLOCKS_PER_SEC;
+			int dif = timelimit1 - msec;
+			printf("we have %d left, and time needed for next level is %d\n", dif, timeNeeded);
+			if (timeNeeded > dif) {
+				break;
+			}
+		}
+		*/
 
-    }
+	}
 
 
-    if (bestState->x == -1) {
-        printf("pass\n");
-        fflush(stdout);
-    } else {
-        printf("%d %d\n", bestState->x, bestState->y);
-        fflush(stdout);
+	if (bestState->x == -1) {
+		printf("pass\n");
+		fflush(stdout);
+	} else {
+		if(verbose)
+			printf("M: %d %d\n", bestState->x, bestState->y);
+		else
+			printf("%d %d\n", bestState->x, bestState->y);
+		fflush(stdout);
 
-        gameState[WHITE] = bestState->board[WHITE];
-        gameState[BLACK] = bestState->board[BLACK];
-    }
+		gameState[WHITE] = bestState->board[WHITE];
+		gameState[BLACK] = bestState->board[BLACK];
+	}
 }
 
 /*
@@ -681,71 +679,75 @@ void make_move(){
  */
 int main(int argc, char **argv){
 
-    char inbuf[256];
-    char playerstring;
-    int x,y,c;
-    struct timeval start, finish;
-    turn = 0;
-    new_game(); //Setup default board state
+	char inbuf[256];
+	char playerstring;
+	int x,y,c;
+	struct timeval start, finish;
+	turn = 0;
+	new_game(); //Setup default board state
 
-    //Read in initial board state if specified (overwrites new_game)
-	while ((c = getopt(argc, argv, "b:w:")) != -1)
-    switch (c) {
-    case 'b':
-    	gameState[BLACK] = strtoll(optarg, NULL, 16);
-    	break;
-    case 'w':
-    	gameState[WHITE] = strtoll(optarg, NULL, 16);
-    	break;
-    default:
-    	exit(1);
-    }
+	//Read in initial board state if specified (overwrites new_game)
+	while ((c = getopt(argc, argv, "b:w:v::")) != -1)
+	switch (c) {
+	case 'b':
+		gameState[BLACK] = strtoll(optarg, NULL, 16);
+		break;
+	case 'w':
+		gameState[WHITE] = strtoll(optarg, NULL, 16);
+		break;
+	case 'v':
+		verbose = TRUE;
+		break;
+	default:
+		exit(1);
+	}
 
-    if (fgets(inbuf, 256, stdin) == NULL){
-        error("Couldn't read from inpbuf");
-    }
-    if (sscanf(inbuf, "game %c %d %d %d", &playerstring, &depthlimit, &timelimit1, &timelimit2) != 4) {
-        error("Bad initial input\nusage: game <color> <depthlimit> <total_timelimit> <turn_timelimit>\n" \
-           "    -color: a single char (B/W) representing this player's color. 'W' is default\n" \
-           "    -limits: only specify a single limit and enter 0 for the others");
-    }
-    if (timelimit1 > 0) {
-        for (unsigned char i = 0; i < 14; i++) {
-            if (times[i] > timelimit1) {
-                guessedDepth = i - 2;
-                break;
-            }
-        }
-    }
-    if (playerstring == 'B' || playerstring == 'b') {
-       color = BLACK;
-    } else{
-       color = WHITE;
-    }
+	if (fgets(inbuf, 256, stdin) == NULL){
+		error("Couldn't read from inpbuf");
+	}
+	if (sscanf(inbuf, "game %c %d %d %d", &playerstring, &depthlimit, &timelimit1, &timelimit2) != 4) {
+		error("Bad initial input\nusage: game <color> <depthlimit> <total_timelimit> <turn_timelimit>\n" \
+		   "    -color: a single char (B/W) representing this player's color. 'W' is default\n" \
+		   "    -limits: only specify a single limit and enter 0 for the others");
+	}
+	if (timelimit1 > 0) {
+		for (unsigned char i = 0; i < 14; i++) {
+			if (times[i] > timelimit1) {
+				guessedDepth = i - 2;
+				break;
+			}
+		}
+	}
+	if (playerstring == 'B' || playerstring == 'b') {
+	   color = BLACK;
+	} else{
+	   color = WHITE;
+	}
 
-    gameClock = clock();
+	gameClock = clock();
 	compute_all_moves(moveTable);
 	calculate_masks(maskTable);
 
-    if (color == BLACK) {
-    	gettimeofday(&start, 0);
-        make_move();
-        gettimeofday(&finish, 0);
-        // fprintf(stdout, "Time: %f seconds, ", (finish.tv_sec - start.tv_sec)
-        // 	+ (finish.tv_usec - start.tv_usec) * 0.000001);
-    }
+	if (color == BLACK) {
+		gettimeofday(&start, 0);
+		make_move();
+		gettimeofday(&finish, 0);
+		if(verbose)
+			fprintf(stdout, "Time: %f seconds, ", (finish.tv_sec - start.tv_sec)
+				+ (finish.tv_usec - start.tv_usec) * 0.000001);
+	}
 
-    while (fgets(inbuf, 256, stdin) != NULL) {
-        if (strncmp(inbuf, "pass", 4) != 0) {
-            if (sscanf(inbuf, "%d %d", &x, &y) != 2) {
-            	fprintf(stderr, "Invalid Input");
-                return 0;
-            }
-            unsigned long long* temp = update(gameState, get_move(x,y),abs(color-1), x, y);
-            gameState[WHITE] = temp[WHITE];
-            gameState[BLACK] = temp[BLACK];
-        }
-        make_move();
-    }
-    return 0;
+	while (fgets(inbuf, 256, stdin) != NULL) {
+		if (strncmp(inbuf, "pass", 4) != 0) {
+			if (sscanf(inbuf, "%d %d", &x, &y) != 2) {
+				fprintf(stderr, "Invalid Input");
+				return 0;
+			}
+			unsigned long long* temp = update(gameState, get_move(x,y),abs(color-1), x, y);
+			gameState[WHITE] = temp[WHITE];
+			gameState[BLACK] = temp[BLACK];
+		}
+		make_move();
+	}
+	return 0;
 }
