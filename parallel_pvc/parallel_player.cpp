@@ -40,6 +40,8 @@ unsigned char moveTable[256][256][2]; //stores all moves (by row) based on [whit
 unsigned long long maskTable[8][8][4]; //stores all shift masks for any given move location
 unsigned long long gameState[2];
 
+int verbose = FALSE; //Print timings for testing
+
 ctpl::thread_pool pool(8);
 
 /*
@@ -784,6 +786,9 @@ int main(int argc, char **argv){
 	case 'w':
 		gameState[WHITE] = strtoll(optarg, NULL, 16);
 		break;
+	case 'v':
+		verbose = TRUE;
+		break;
 	default:
 		exit(1);
 	}
@@ -816,8 +821,14 @@ int main(int argc, char **argv){
 	gameClock = clock();
 	compute_all_moves(moveTable);
 	calculate_masks(maskTable);
+
 	if (color == BLACK) {
+		gettimeofday(&start, 0);
 		make_move();
+		gettimeofday(&finish, 0);
+		if(verbose)
+			fprintf(stdout, "Time: %f seconds, ", (finish.tv_sec - start.tv_sec)
+				+ (finish.tv_usec - start.tv_usec) * 0.000001);
 	}
 	while (fgets(inbuf, 256, stdin) != NULL) {
 		if (strncmp(inbuf, "pass", 4) != 0) {
