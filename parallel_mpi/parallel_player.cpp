@@ -343,7 +343,7 @@ double heuristics(unsigned long long board[2], int color){
 		mobilDiff = 100*(playerMobil-opponentMobil)/(playerMobil+opponentMobil);
 	}
 	else
-		return pieceDiff>0?DBL_MAX/1.1:DBL_MAX/1.1;
+		return pieceDiff>0?DBL_MAX/1.1:-DBL_MAX/1.1;
 
 	//Find corner diff
 	double playerCorner = iter_count(board[color]&0x8100000000000081u);
