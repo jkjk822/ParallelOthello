@@ -559,12 +559,71 @@ void free_children(state* children) {
 	children = NULL;
 }
 
+double minimax(state *node, state* bestState, int depth, int currentPlayer, double alpha, double beta, int id) {
+	
+	if (depth == 0 || game_over(node->board)) {
+		return heuristics(node->board, currentPlayer);
+	}
+
+	state* gb = new_state();
+	
+	state* children = new_state();
+
+	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
+
+	sort_children(&children, currentPlayer);//TODO: remove print
+
+	  //  printf("Children after:");
+	//TODO: remove print
+   // printChildren(children);
+	state* current = children;//TODO: remove print
+	//printf("is current null?x: %d\n", current->x);
+	
+	int p;
+	if (depth == 1) {
+		p = 0;
+	}else {
+		p = id;
+	}
+
+	while (current != NULL) {
+		//recurse on child
+		double result = -minimax(current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha, p);
+
+		if (result >= beta) {
+			return beta;
+		}
+		if (result > alpha) {
+			globalBest->score = result;
+			globalBest->id = p;
+			alpha = result;
+			bestState->board = current->board;
+			bestState->x = current->x;
+			bestState->y = current->y;
+		}
+
+		if (depth == 1)
+			p++;
+
+		//go to next child
+		current = current->next;
+	}
+	free(gb);
+	free_children(children);
+
+	return alpha;
+}
+
 double master_minimax(state *node, state* bestState, int depth, int currentPlayer,double alpha, double beta, int id) {
 
 	double bestResult = -DBL_MAX;
 	state* gb = new_state();
 	if (depth == 0 || game_over(node->board)) {
-		return heuristics(node->board, currentPlayer);
+		start_alpha = heuristics(node->board, currentPlayer);
+		start_beta = beta;
+		ierr = MPI_Bcast(&start_alpha, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		ierr = MPI_Bcast(&start_beta, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		return start_alpha;
 	}
 
 	state* children = new_state();
@@ -588,7 +647,7 @@ double master_minimax(state *node, state* bestState, int depth, int currentPlaye
 
 	if (depth == depthlimit) {
 
-		while(sendCurrent != null) {
+		while(sendCurrent != NULL) {
 			double max = -DBL_MAX;
 			int recipient = 0;
 			int temp_depthlimit = 0;
@@ -634,104 +693,70 @@ double master_minimax(state *node, state* bestState, int depth, int currentPlaye
 	//go to next child
 	current = current->next;
 	//-------------------------------------------------------
-	
-
-	while (current != NULL) {	
-		
-
-		if (depth == 1)
-			p++;
-		current = current->next;
-	}
-	//cout << send_count << "\n";
-	for(i = 0; i < send_count; i++) {
-		recipient = (i % (num_procs - 1)) + 1;
-		MPI_Recv(&temp_alpha, 1, MPI_DOUBLE, recipient, 100 + recipient, MPI_COMM_WORLD, &status);
-		if(temp_alpha > max) {
-			max = temp_alpha;
+	if (depth == depthlimit) {
+		//cout << send_count << "\n";
+		int recipient; 
+		double temp_alpha, max;
+		for(int i = 0; i < send_count; i++) {
+			recipient = (i % (num_procs - 1)) + 1;
+			MPI_Recv(&temp_alpha, 1, MPI_DOUBLE, recipient, 100 + recipient, MPI_COMM_WORLD, &status);
+			if(temp_alpha > max) {
+				max = temp_alpha;
+			}
+			//cout << "received from " << recipient << "\n";
 		}
-		//cout << "received from " << recipient << "\n";
-	}
 
-	//CHECK BEST ALPHA
-	if (alpha == 1 && id == globalBest.first) {
-		bestState->board = current->board;
-		bestState->x = current->x;
-		bestState->y = current->y;
-		return -1;
-	}
-	if (beta <= alpha) {
-		return alpha;
-	}
-	if (alpha > bestResult)
-	{
-		globalBest.second = alpha;
-		globalBest.first = p;
-		bestResult = alpha;
-		bestState->board = current->board;
-		bestState->x = current->x;
-		bestState->y = current->y;
-	}
-
-	free_children(children);
-
-	return bestResult;
-
-}
-
-double minimax(state_t *node, state_t* bestState, int depth, int currentPlayer, double alpha, double beta, int id) {
-	
-	if (depth == 0 || game_over(node->board)) {
-		return heuristics(node->board, currentPlayer);
-	}
-
-	state_t* gb = new_state();
-	
-	state_t* children = new_state();
-
-	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
-
-	sort_children(&children, currentPlayer);//TODO: remove print
-
-	  //  printf("Children after:");
-	//TODO: remove print
-   // printChildren(children);
-	state_t* current = children;//TODO: remove print
-	//printf("is current null?x: %d\n", current->x);
-	
-	int p;
-	if (depth == 1) {
-		p = 0;
-	}else {
-		p = id;
-	}
-
-	while (current != NULL) {
-		//recurse on child
-		double result = -minimax(current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha, p);
-
-		if (result >= beta) {
-			return beta;
+		//CHECK BEST ALPHA
+		if (alpha == 1 && id == globalBest.first) {
+			bestState->board = current->board;
+			bestState->x = current->x;
+			bestState->y = current->y;
+			return -1;
 		}
-		if (result > alpha) {
-			globalBest->score = result;
-			globalBest->id = p;
-			alpha = result;
+		if (beta <= alpha) {
+			return alpha;
+		}
+		if (alpha > bestResult)
+		{
+			globalBest.second = alpha;
+			globalBest.first = p;
+			bestResult = alpha;
 			bestState->board = current->board;
 			bestState->x = current->x;
 			bestState->y = current->y;
 		}
 
-		if (depth == 1)
-			p++;
+		free_children(children);
 
-		//go to next child
-		current = current->next;
+		return bestResult;
+	} else {
+		while (current != NULL) {
+			//recurse on child
+			double result = -minimax(current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha, p);
+
+			if (result >= beta) {
+				return beta;
+			}
+			if (result > alpha) {
+				globalBest->score = result;
+				globalBest->id = p;
+				alpha = result;
+				bestState->board = current->board;
+				bestState->x = current->x;
+				bestState->y = current->y;
+			}
+
+			if (depth == 1)
+				p++;
+
+			//go to next child
+			current = current->next;
+		}
+		free(gb);
+		free_children(children);
+
+		return alpha;
 	}
-	free(gb);
-	free_children(children);
-
-	return alpha;
 }
 
 void make_move(){
@@ -774,6 +799,7 @@ void make_move(){
 			int temp_id = 0;
 			int temp_color = 0;
 			double mm_val = 0.0;
+			bool firstTime = true;
 			while(true) {	
 				//cout << my_id << " waiting\n";
 
@@ -786,7 +812,11 @@ void make_move(){
 				MPI_Recv(&temp_beta, 1, MPI_DOUBLE, root_process, 600 + my_id, MPI_COMM_WORLD, &status);
 				MPI_Recv(&temp_id, 1, MPI_INT, root_process, 700 + my_id, MPI_COMM_WORLD, &status);
 				
-				MPI_Bcast()
+				if (firstTime) {
+					ierr = MPI_Bcast(&start_alpha, 1, MPI_INT, 0, MPI_COMM_WORLD);
+					ierr = MPI_Bcast(&start_beta, 1, MPI_INT, 0, MPI_COMM_WORLD);
+					firstTime = false;
+				}
 				//cout << my_id << " recieved\n";
 				//call minimax
 				mm_val = -minimax(initialState, bestState, temp_depthlimit, temp_color, temp_alpha, temp_beta, temp_id);
