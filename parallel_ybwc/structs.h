@@ -5,8 +5,6 @@ struct state{
     unsigned long long* board;
     int x;
     int y;
-    double alpha;
-    double beta;
     double val;
     struct state* next;
 };
