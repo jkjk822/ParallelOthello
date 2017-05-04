@@ -548,13 +548,13 @@ void free_children(state_t* children) {
     children = NULL;
 }
 
-double minimax(state_t *node, state_t* bestState, int depth, int currentPlayer,double alpha, double beta, int id) {
-
-    double bestResult = -DBL_MAX;
-    state_t* gb = new_state();
+double minimax(state_t *node, state_t* bestState, int depth, int currentPlayer, double alpha, double beta, int id) {
+    
     if (depth == 0 || game_over(node->board)) {
         return heuristics(node->board, currentPlayer);
     }
+
+    state_t* gb = new_state();
 	
     state_t* children = new_state();
 
@@ -576,23 +576,23 @@ double minimax(state_t *node, state_t* bestState, int depth, int currentPlayer,d
     }
     while (current != NULL) {
         //recurse on child
-        alpha = -minimax(current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha, p);
-
+        double result = -minimax(current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha, p);
+        if(depth == 6)
+        	printf("Update? %lf %d%d\n", result, current->x, current->y);
         //Enemy had no moves
-        if (alpha == 1 && id == globalBest->id) {
+        if (result == 1 && id == globalBest->id) {
         	bestState->board = current->board;
             bestState->x = current->x;
             bestState->y = current->y;
             return -1;
         }
-        if (beta <= alpha) {
+        if (result >= beta) {
             return beta;
         }
-        if (alpha > bestResult)
-        {
-            globalBest->score = alpha;
+        if (result > alpha) {
+            globalBest->score = result;
             globalBest->id = p;
-            bestResult = alpha;
+            alpha = result;
             bestState->board = current->board;
             bestState->x = current->x;
             bestState->y = current->y;
@@ -604,10 +604,10 @@ double minimax(state_t *node, state_t* bestState, int depth, int currentPlayer,d
        	//go to next child
         current = current->next;
     }
-
+    free(gb);
     free_children(children);
 
-    return bestResult;
+    return alpha;
 }
 
 
@@ -642,7 +642,8 @@ void make_move(){
 
     /* Depthlimit is set - we only search to that depth */
     else if (depthlimit > 0) {
-        minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX,0);
+    	// minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX,0);
+        printf("Final: %lf\n", minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX,0));
     }
 
     /* Time per move is set */
@@ -677,9 +678,8 @@ void make_move(){
         printf("%d %d\n", bestState->x, bestState->y);
         fflush(stdout);
 
-        unsigned long long* temp = update(gameState, get_move(bestState->x, bestState->y), color, bestState->x, bestState->y);
-        gameState[WHITE] = temp[WHITE];
-        gameState[BLACK] = temp[BLACK];
+        gameState[WHITE] = bestState->board[WHITE];
+        gameState[BLACK] = bestState->board[BLACK];
     }
 }
 
