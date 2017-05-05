@@ -610,23 +610,18 @@ double minimax(state* node, state* bestState, int depth, int currentPlayer,doubl
 	vector<future<double>> results;
 	results.reserve(10); //10 is average branching factor
 
-	// cout << "Initial Best " << result << endl;
+	// if(depth == depthlimit)
+	// 	cout << "Initial Best " << result << endl;
 	while(current != NULL){
-		if(depth > SERIAL_DEPTH && pool.n_idle() > 0){
+		//No more parallel branching in subtrees of SERIAL_DEPTH
+		if(depth > SERIAL_DEPTH && pool.n_idle() > 0){ //Do in pool if idle threads
 			results.push_back(pool.push(minimax_serial, current, depth-1, abs(currentPlayer-1), -beta, -alpha));
 		}
-		else{
-			result = -minimax_serial(-1, current, depth-1, abs(currentPlayer-1), -beta, -alpha);
-			if (result >= beta) {
-				free_list(children);
-				return beta;
-			}
-			if (result > alpha)	{
-				alpha = result;
-				bestState->board = current->board;
-				bestState->x = current->x;
-				bestState->y = current->y;
-			}
+		else{ //Else do yourself
+			promise<double> fake; //Fake future
+			results.push_back(fake.get_future()); //Imitate pushing call
+			//Fulfill immediately
+			fake.set_value(minimax_serial(-1, current, depth-1, abs(currentPlayer-1), -beta, -alpha));
 		}
 		current = current->next;
 	}
@@ -641,7 +636,8 @@ double minimax(state* node, state* bestState, int depth, int currentPlayer,doubl
 				bestState->x = current->x;
 				bestState->y = current->y;
 			}
-			// cout << "Update? " << val << " " << current->x << current->y << endl;
+			// if(depth == depthlimit)
+			// 	cout << "Update? " << val << " " << current->x << current->y << endl;
 			current = current->next;
 		}
 
