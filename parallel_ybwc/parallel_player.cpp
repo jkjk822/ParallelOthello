@@ -600,7 +600,8 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 	}
 	if (result > alpha)	{
 		alpha = result;
-		bestState->board = current->board;
+		bestState->board[WHITE] = current->board[WHITE];
+		bestState->board[BLACK] = current->board[BLACK];
 		bestState->x = current->x;
 		bestState->y = current->y;
 	}
@@ -623,7 +624,8 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 			}
 			if (result > alpha)	{
 				alpha = result;
-				bestState->board = current->board;
+				bestState->board[WHITE] = current->board[WHITE];
+				bestState->board[BLACK] = current->board[BLACK];
 				bestState->x = current->x;
 				bestState->y = current->y;
 			}
@@ -631,12 +633,11 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 		else*/ if(pool.n_idle() > 0) //Do in pool if idle threads
 			results.push_back(pool.push(minimax, current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha));
 		else{ //Else do yourself
-			result = -minimax(thread_id, current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
+			promise<double> fake; //Fake future
+			results.push_back(fake.get_future()); //Imitate pushing call
+			//Fulfill immediately
+			fake.set_value(minimax(thread_id, current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha));
 
-			promise<double> fake;
-			results.push_back(fake.get_future());
-			fake.set_value(-result);
-			
 			// if(thread_id == -1 && depth == depthlimit)
 			// 	cout << "Otherdate? " << result << " " << current->x << current->y << endl;
 		}
@@ -649,7 +650,8 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 			double val = -results[i].get();
 			if(val > result){
 				result = val;
-				bestState->board = current->board;
+				bestState->board[WHITE] = current->board[WHITE];
+				bestState->board[BLACK] = current->board[BLACK];
 				bestState->x = current->x;
 				bestState->y = current->y;
 			}
