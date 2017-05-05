@@ -548,6 +548,7 @@ void free_children(state* children) {
 	children = NULL;
 }
 
+/* Serial minimax algorithm */
 double minimax(state *node, int depth, int currentPlayer, double alpha, double beta) {
 	
 
@@ -566,7 +567,7 @@ double minimax(state *node, int depth, int currentPlayer, double alpha, double b
 		double result = -minimax(current, depth-1, abs(currentPlayer-1), -beta, -alpha);
 
 		if (result >= beta) {
-			return beta;
+			return beta; //prune
 		}
 		if (result > alpha) {
 			alpha = result;
@@ -580,13 +581,20 @@ double minimax(state *node, int depth, int currentPlayer, double alpha, double b
 	return alpha;
 }
 
+/* Master control algorithm
+ * - calculates correct number of initial children
+ * - sends processes their assigments
+ * - collects responses and chooses best
+ */
 void master_minimax(state *node, state* bestState, int depth, int currentPlayer) {
 
+	//queues to hold child nodes
 	queue<state*> send;
 	queue<state*> receive;
 	send.push(node);
 	receive.push(node);
 
+	//expand next level of children if there are more processes than child nodes
 	while(send.size() < num_procs){
 		int size = send.size();
 		for(int i = 0; i < size; i++){
@@ -604,22 +612,18 @@ void master_minimax(state *node, state* bestState, int depth, int currentPlayer)
 			}
 			send.pop();
 			receive.pop();
-			// cout << "finna" << endl;
 		}
 		currentPlayer = abs(currentPlayer-1);
 		depth--;
 	}
 
+	//send out child nodes to processes
 	for(int send_count = 0; !send.empty(); send_count++) {
 
-		// cout << "Chillun? " << send.front() << " " << send.front()->x << send.front()->y << endl;
 		int recipient = (send_count % (num_procs - 1)) + 1;
 		int temp_depth = depth;
 		int temp_color = currentPlayer;
 
-		// cout << "w " << send.front()->board[WHITE] << endl;
-		// cout << "b " << send.front()->board[BLACK] << endl;
-		//SEND INFO TO RECIPIENT
 		MPI_Send(send.front()->board, 2, MPI_UNSIGNED_LONG_LONG, recipient, 100 + recipient, MPI_COMM_WORLD);
 		MPI_Send(&temp_depth, 1, MPI_INT, recipient, 200 + recipient, MPI_COMM_WORLD);
 		MPI_Send(&temp_color, 1, MPI_INT, recipient, 300 + recipient, MPI_COMM_WORLD);
@@ -627,6 +631,7 @@ void master_minimax(state *node, state* bestState, int depth, int currentPlayer)
 		send.pop();
 	}
 
+	//get back results of minimax and choose best
 	double max = -DBL_MAX;
 	for(int i = 0; !receive.empty(); i++) {
 
@@ -648,6 +653,11 @@ void master_minimax(state *node, state* bestState, int depth, int currentPlayer)
 	}
 }
 
+/*
+* Repeatedly called in main to progress game
+* Initial call to minimax. Gets best move,
+* makes it, and updates board.
+*/
 void make_move(){
 
 	globalBest = make_pair(0, -DBL_MAX);
@@ -659,7 +669,10 @@ void make_move(){
 
 	state* bestState = new_state();
 
+	/***THIS ONE WE ACTUALLY USE***/
+	/* Depthlimit is set - we only search to that depth */
 	if(my_id == root_process) {
+		//master calls control function
 		master_minimax(initialState, bestState, depthlimit, color);
 	} else {
 		int temp_depth = 0;
@@ -668,20 +681,20 @@ void make_move(){
 		double alpha = 0;
 		bool firstTime = true;
 		while(true) {
-			//recieve parameters
+			//slaves wait for parameters, call serial minimax, then send back value
 			MPI_Recv(initialState->board, 2, MPI_UNSIGNED_LONG_LONG, root_process, 100 + my_id, MPI_COMM_WORLD, &status);
 			MPI_Recv(&temp_depth, 1, MPI_INT, root_process, 200 + my_id, MPI_COMM_WORLD, &status);
 			MPI_Recv(&temp_color, 1, MPI_INT, root_process, 300 + my_id, MPI_COMM_WORLD, &status);
 
 			//call minimax
 			mm_val = minimax(initialState, temp_depth, temp_color, -DBL_MAX, DBL_MAX);
-			// cout << initialState->board[BLACK] << " " << mm_val << " " << temp_depth << endl;
+
 			//send back value;
 			MPI_Send(&mm_val, 1, MPI_DOUBLE, root_process, 100 + my_id, MPI_COMM_WORLD);
 		}
 	}
 
-
+	/* Master returns move */
 	if (my_id == root_process) {
 		if (bestState->x == -1) {
 			printf("pass\n");

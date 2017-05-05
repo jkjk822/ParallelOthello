@@ -558,6 +558,10 @@ void free_children(state* children) {
 	children = NULL;
 }
 
+/* PVC minimax algorithm 
+ * - master traverses to depth on "best" child
+ * - sends off other children in parallel on its way back up
+*/
 double minimax(state *node, state* bestState, int depth, int currentPlayer,double alpha, double beta) {
 
 	double bestResult = -DBL_MAX;
@@ -573,12 +577,12 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer,doubl
 
 	//ROOT PROCESS MINIMAX
 	if(my_id == root_process) {
-		//-------------------------------------------------------
+
 		//CALL MINIMAX ON BEST CHILD
 		double result = -minimax(current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
 
 		if (result >= beta) {
-			return beta;
+			return beta; //prune
 		}
 		if (result > alpha)
 		{
@@ -587,9 +591,6 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer,doubl
 			bestState->x = current->x;
 			bestState->y = current->y;
 		}
-		// if (depth == depthlimit)
-		// 	cout << "Initial Best " << result << endl;
-		//-------------------------------------------------------
 		
 		int send_count = 0;
 		int recipient = 0;
@@ -600,6 +601,7 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer,doubl
 		state* send_current = current->next;
 		state* best_child = current;
 
+		//Send out child nodes to processes
 		while (send_current != NULL) {	
 			
 			recipient = (send_count % (num_procs - 1)) + 1;
@@ -619,6 +621,7 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer,doubl
 			send_current = send_current->next;
 		}
 
+		//collect responses from other processes and choose best
 		for(int i = 0; i < send_count; i++) {
 			current = current->next;
 			recipient = (i % (num_procs - 1)) + 1;
@@ -631,8 +634,9 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer,doubl
 
 		}
 		
+		//return minimax with best value from children
 		if (result >= beta) {
-			return beta;
+			return beta; //prune
 		}
 		if (result > alpha) {
 			alpha = result;
@@ -643,6 +647,7 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer,doubl
 
 	//NON ROOT MINIMAX
 	} else {
+		//given a child carry out minimax serially 
 		while (current != NULL) {
 			//recurse on child
 			double result = -minimax(current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
@@ -665,7 +670,11 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer,doubl
 	return alpha;
 }
 
-
+/*
+* Repeatedly called in main to progress game
+* Initial call to minimax. Gets best move,
+* makes it, and updates board.
+*/
 void make_move(){
 
 	globalBest = make_pair(0, -DBL_MAX);
@@ -676,6 +685,8 @@ void make_move(){
 	initialState->board = gameState;
 
 	state* bestState = new_state();
+
+	/***IGNORE***/
 	/* Timelimit2 is set - overall game time */
 	if (timelimit2 > 0) {
 			clock_t timePassed= clock() - gameClock;
@@ -692,6 +703,7 @@ void make_move(){
 			minimax(initialState, bestState, depth, color, -DBL_MAX, DBL_MAX);
 	}
 
+	/***THIS ONE WE ACTUALLY USE***/
 	/* Depthlimit is set - we only search to that depth */
 	else if (depthlimit > 0) {
 		if(my_id == root_process) {
@@ -719,6 +731,7 @@ void make_move(){
 		}
 	}
 
+	/***IGNORE***/
 	/* Time per move is set */
 	else {
 		minimax(initialState, bestState, 10, color, -DBL_MAX, DBL_MAX);
