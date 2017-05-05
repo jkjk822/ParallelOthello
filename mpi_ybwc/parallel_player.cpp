@@ -564,18 +564,11 @@ double minimax(state *node, int depth, int currentPlayer, double alpha, double b
 	if (depth == 0 || game_over(node->board)) {
 		return heuristics(node->board, currentPlayer);
 	}
-	
+
 	state* children = new_state();
-
 	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
-
-	sort_children(&children, currentPlayer);//TODO: remove print
-
-	  //  printf("Children after:");
-	//TODO: remove print
-   // printChildren(children);
-	state* current = children;//TODO: remove print
-	//printf("is current null?x: %d\n", current->x);
+	sort_children(&children, currentPlayer);
+	state* current = children;
 
 	while (current != NULL) {
 		//recurse on child
@@ -607,7 +600,6 @@ double master_minimax(state *node, state* bestState, int depth, int currentPlaye
 			start_alpha = -beta;
 			start_beta = -heuristics(node->board, currentPlayer);
 		}
-		cout << "calculated Alpha Beta " << start_alpha << " " << start_beta << endl;
 		ierr = MPI_Bcast(&start_alpha, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		ierr = MPI_Bcast(&start_beta, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		return start_alpha;
@@ -615,9 +607,7 @@ double master_minimax(state *node, state* bestState, int depth, int currentPlaye
 
 	state* children = new_state();
 	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
-
 	sort_children(&children, currentPlayer);
-
 	state* current = children;
 	state* sendCurrent = children;
 	sendCurrent = sendCurrent->next;
@@ -661,8 +651,6 @@ double master_minimax(state *node, state* bestState, int depth, int currentPlaye
 
 	//-------------------------------------------------------
 	if (depth == depthlimit) {
-		//cout << send_count << "\n";
-		//cout << "Initial Best " << result << endl;
 		int recipient; 
 		double temp_alpha = 0;
 		state* best_child = current;
@@ -682,17 +670,13 @@ double master_minimax(state *node, state* bestState, int depth, int currentPlaye
 		if (result >= beta) {
 			return beta;
 		}
-		if (result > alpha)
-		{
+		if (result > alpha) {
 			alpha = result;
 			bestState->board = best_child->board;
 			bestState->x = best_child->x;
 			bestState->y = best_child->y;
 		}
 
-		free_children(children);
-
-		return alpha;
 	} else {
 		while (current != NULL) {
 			//recurse on child
@@ -721,7 +705,6 @@ void make_move(){
 	globalBest = make_pair(0, -DBL_MAX);
 	frameClock = clock();
 	clock_t beginClock = clock(), deltaClock;
-
 
 	state* initialState = new_state();
 	initialState->board = gameState;
@@ -763,11 +746,9 @@ void make_move(){
 					ierr = MPI_Bcast(&start_beta, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 					firstTime = false;
 				}
-				//cout << my_id << " recieved\n";
+
 				//call minimax
-				//cout << "ALPHA " << start_alpha << endl;
 				mm_val = -minimax(initialState, temp_depthlimit, temp_color, start_alpha, start_beta);
-				//cout << "sending: " << mm_val << endl;
 				//send back value;
 				MPI_Send(&mm_val, 1, MPI_DOUBLE, root_process, 100 + my_id, MPI_COMM_WORLD);
 			}
@@ -804,8 +785,6 @@ int main(int argc, char *argv[]){
 	turn = 0;
 	new_game(); //Setup default board state
 
-
-
 	//Read in initial board state if specified (overwrites new_game)
 	while ((c = getopt(argc, argv, "b:w:")) != -1)
 	switch (c) {
@@ -819,39 +798,35 @@ int main(int argc, char *argv[]){
 		exit(1);
 	}
 
-
 	ierr = MPI_Init(&argc, &argv);
 	ierr = MPI_Comm_rank(MPI_COMM_WORLD, &my_id);
 	ierr = MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
 	if(my_id == root_process){
-	if (fgets(inbuf, 256, stdin) == NULL){
-		error("Couldn't read from inpbuf");
-	}
+		if (fgets(inbuf, 256, stdin) == NULL){
+			error("Couldn't read from inpbuf");
+		}
 
-
-	if (sscanf(inbuf, "game %c %d %d %d", &playerstring, &depthlimit, &timelimit1, &timelimit2) != 4) {
-		error("Bad initial input\nusage: game <color> <depthlimit> <total_timelimit> <turn_timelimit>\n" \
-		   "    -color: a single char (B/W) representing this player's color. 'W' is default\n" \
-		   "    -limits: only specify a single limit and enter 0 for the others");
-	}
-	if (timelimit1 > 0) {
-		for (unsigned char i = 0; i < 14; i++) {
-			if (times[i] > timelimit1) {
-				guessedDepth = i - 2;
-				break;
+		if (sscanf(inbuf, "game %c %d %d %d", &playerstring, &depthlimit, &timelimit1, &timelimit2) != 4) {
+			error("Bad initial input\nusage: game <color> <depthlimit> <total_timelimit> <turn_timelimit>\n" \
+			   "    -color: a single char (B/W) representing this player's color. 'W' is default\n" \
+			   "    -limits: only specify a single limit and enter 0 for the others");
+		}
+		if (timelimit1 > 0) {
+			for (unsigned char i = 0; i < 14; i++) {
+				if (times[i] > timelimit1) {
+					guessedDepth = i - 2;
+					break;
+				}
 			}
 		}
-	}
-	if (playerstring == 'B' || playerstring == 'b') {
-	   color = BLACK;
-	} else{
-	   color = WHITE;
-	}
+		if (playerstring == 'B' || playerstring == 'b') {
+		   color = BLACK;
+		} else{
+		   color = WHITE;
+		}
 	}
 
-
-	
 	//broadcast black or white
 	ierr = MPI_Bcast(&color, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	ierr = MPI_Bcast(&depthlimit, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -878,7 +853,6 @@ int main(int argc, char *argv[]){
 		}
 		make_move();
 	}
-	
 
 	ierr = MPI_Finalize();
 	return 0;
