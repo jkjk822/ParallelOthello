@@ -72,6 +72,7 @@ unsigned int bit_count(unsigned long long board){
  */
 state* new_state() {
 	state* s = new state;
+	s->next = NULL;
 
 	// Zero out the board
 	s->board = (unsigned long long *)malloc(sizeof(unsigned long long)*2);
@@ -372,7 +373,6 @@ double heuristics(unsigned long long board[2], int color){
 unsigned long long flip(unsigned long long w, unsigned long long b, unsigned long long move){
 
 	unsigned long long flipped = 0;
-
 	unsigned long long t = move;
 	unsigned long long flip = 0;
 
@@ -457,6 +457,7 @@ void generate_children(state* head, unsigned long long currBoard[2], unsigned lo
 	board[WHITE][R0] = currBoard[WHITE];
 	board[BLACK][R0] = currBoard[BLACK];
 	compute_rotations(board);
+
 	while(moves){
 		unsigned long long currMove = moves&(~moves+1);
 		int temp = get_shift(currMove);
@@ -484,7 +485,6 @@ void error(string msg){
 
 //Tests if the game has ended
 int game_over(unsigned long long board[2]){
-
 	return !(generate_moves(board, WHITE)|generate_moves(board, BLACK));
 }
 
@@ -516,6 +516,7 @@ void sort_children(state** node, int player){
 	if (*node == bestNode) {
 		return;
 	}
+
 	current = *node;
 	while (current != NULL) {
 		if (current->next == bestNode) {
@@ -563,7 +564,7 @@ double minimax_serial(state* node, int depth, int currentPlayer, double alpha, d
 		if (result >= beta) {
 			return beta;
 		}
-		if (result > alpha)	{
+		if (result > alpha) {
 			alpha = result;
 		}
 
@@ -583,7 +584,7 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 		return heuristics(node->board, currentPlayer);
 	}
 
-	state* gb = new_state();
+	state gb = state();
 	state* children = new_state();
 
 	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
@@ -592,16 +593,15 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 	state* current = children;
 
 	//recurse on child
-	double result = -minimax(thread_id, current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
+	double result = -minimax(thread_id, current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
 
 	if (result >= beta) {
-		// free_list(children);
+		free_list(children);
 		return beta;
 	}
 	if (result > alpha)	{
 		alpha = result;
-		bestState->board[WHITE] = current->board[WHITE];
-		bestState->board[BLACK] = current->board[BLACK];
+		bestState->board = current->board;
 		bestState->x = current->x;
 		bestState->y = current->y;
 	}
@@ -609,7 +609,6 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 	//go to next child
 	current = current->next;
 
-	int return_val = 0;
 	vector<future<double>> results;
 	results.reserve(10); //10 is average branching factor
 
@@ -631,12 +630,12 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 			}
 		}
 		else*/ if(pool.n_idle() > 0) //Do in pool if idle threads
-			results.push_back(pool.push(minimax, current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha));
+			results.push_back(pool.push(minimax, current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha));
 		else{ //Else do yourself
 			promise<double> fake; //Fake future
 			results.push_back(fake.get_future()); //Imitate pushing call
 			//Fulfill immediately
-			fake.set_value(minimax(thread_id, current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha));
+			fake.set_value(minimax(thread_id, current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha));
 
 			// if(thread_id == -1 && depth == depthlimit)
 			// 	cout << "Otherdate? " << result << " " << current->x << current->y << endl;
@@ -650,8 +649,7 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 			double val = -results[i].get();
 			if(val > result){
 				result = val;
-				bestState->board[WHITE] = current->board[WHITE];
-				bestState->board[BLACK] = current->board[BLACK];
+				bestState->board = current->board;
 				bestState->x = current->x;
 				bestState->y = current->y;
 			}
@@ -678,13 +676,12 @@ void make_move(){
 	frameClock = clock();
 	clock_t beginClock = clock(), deltaClock;
 
-
 	state* initialState = new_state();
 	initialState->board = gameState;
 
 	state* bestState = new_state();
 
-
+	/***IGNORE***/
 	/* Timelimit2 is set - overall game time */
 	if (timelimit2 > 0) {
 			clock_t timePassed= clock() - gameClock;
@@ -700,17 +697,17 @@ void make_move(){
 			minimax(-1, initialState, bestState, depth, color, -DBL_MAX, DBL_MAX);
 	}
 
+	/***THIS ONE WE ACTUALLY USE***/
 	/* Depthlimit is set - we only search to that depth */
 	else if (depthlimit > 0) {
 		minimax(-1, initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX);
-		// printf("Final: %g\n", minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX));
 	}
 
+	/***IGNORE***/
 	/* Time per move is set */
 	else {
 		minimax(-1, initialState, bestState, 10, color, -DBL_MAX, DBL_MAX);
-
-/*
+		/*
 		for (int i = 1; i <15; i++) {
 			int timeNeeded = times[i+1];
 			clock_t start = clock(), diff;
@@ -727,7 +724,6 @@ void make_move(){
 			}
 		}
 		*/
-
 	}
 
 
@@ -736,16 +732,13 @@ void make_move(){
 		fflush(stdout);
 	} else {
 		if(verbose)
-			printf("M: %d %d\n", bestState->x, bestState->y);
+			printf("M: %d %d, ", bestState->x, bestState->y);
 		else
 			printf("%d %d\n", bestState->x, bestState->y);
 		fflush(stdout);
-		unsigned long long* temp = update(gameState, get_move(bestState->x, bestState->y), color, bestState->x, bestState->y);
-		gameState[WHITE] = temp[WHITE];
-		gameState[BLACK] = temp[BLACK];
 
-		// gameState[WHITE] = bestState->board[WHITE];
-		// gameState[BLACK] = bestState->board[BLACK];
+		gameState[WHITE] = bestState->board[WHITE];
+		gameState[BLACK] = bestState->board[BLACK];
 	}
 }
 
