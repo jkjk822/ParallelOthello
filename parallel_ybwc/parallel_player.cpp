@@ -615,21 +615,13 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 	// if(thread_id == -1 && depth == depthlimit)
 	// 	cout << "Initial Best " << result << endl;
 	while(current != NULL){
-		/*if(depth <= SERIAL_DEPTH){ //No more parallel branching in subtrees of SERIAL_DEPTH
-			result = -minimax_serial(current, depth-1, abs(currentPlayer-1), -beta, -alpha);
-			if (result >= beta) {
-				free_list(children);
-				return beta;
-			}
-			if (result > alpha)	{
-				alpha = result;
-				bestState->board[WHITE] = current->board[WHITE];
-				bestState->board[BLACK] = current->board[BLACK];
-				bestState->x = current->x;
-				bestState->y = current->y;
-			}
+		if(depth <= SERIAL_DEPTH){ //No more parallel branching in subtrees of SERIAL_DEPTH
+			promise<double> fake; //Fake future
+			results.push_back(fake.get_future()); //Imitate pushing call
+			//Fulfill immediately
+			fake.set_value(minimax_serial(current, depth-1, abs(currentPlayer-1), -beta, -alpha));
 		}
-		else*/ if(pool.n_idle() > 0) //Do in pool if idle threads
+		else if(pool.n_idle() > 0) //Do in pool if idle threads
 			results.push_back(pool.push(minimax, current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha));
 		else{ //Else do yourself
 			promise<double> fake; //Fake future
@@ -656,14 +648,14 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 		}
 
 		if (result >= beta) {
-			// free_list(children);
+			free_list(children);
 			return beta;
 		}
 		if (result > alpha)	{
 			alpha = result;
 		}
 	}
-	// free_list(children);
+	free_list(children);
 	return alpha;
 }
 
