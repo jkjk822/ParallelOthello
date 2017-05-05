@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <time.h>
+#include <sys/time.h>
 #include <cfloat>
 #include <string>
 #include <cstring>
@@ -32,6 +33,8 @@ int color;
 int guessedDepth = 0;
 int depthlimit, timelimit1, timelimit2;
 double start_alpha, start_beta;
+
+int verbose = FALSE; //Print timings for testing
 
 int turn;
 int totalStates = 0;
@@ -763,8 +766,10 @@ void make_move(){
 			printf("pass\n");
 			fflush(stdout);
 		} else {
-			printf("%d %d\n", bestState->x, bestState->y);
-			fflush(stdout);
+			if(verbose)
+				printf("M: %d %d ", bestState->x, bestState->y);
+			else
+				printf("%d %d\n", bestState->x, bestState->y);
 
 			unsigned long long* temp = update(gameState, get_move(bestState->x, bestState->y), color, bestState->x, bestState->y);
 			gameState[WHITE] = temp[WHITE];
@@ -783,16 +788,20 @@ int main(int argc, char *argv[]){
 	char playerstring;
 	int x,y,c;
 	turn = 0;
+	struct timeval start, finish;
 	new_game(); //Setup default board state
 
 	//Read in initial board state if specified (overwrites new_game)
-	while ((c = getopt(argc, argv, "b:w:")) != -1)
+	while ((c = getopt(argc, argv, "b:w:v::")) != -1)
 	switch (c) {
 	case 'b':
 		gameState[BLACK] = strtoll(optarg, NULL, 16);
 		break;
 	case 'w':
 		gameState[WHITE] = strtoll(optarg, NULL, 16);
+		break;
+	case 'v':
+		verbose = TRUE;
 		break;
 	default:
 		exit(1);
@@ -838,21 +847,26 @@ int main(int argc, char *argv[]){
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	if (color == BLACK) {
+		gettimeofday(&start, 0);
 		make_move();
+		gettimeofday(&finish, 0);
+		if(verbose)
+			fprintf(stdout, "Time: %f seconds, ", (finish.tv_sec - start.tv_sec)
+				+ (finish.tv_usec - start.tv_usec) * 0.000001);
 	}
-	while (fgets(inbuf, 256, stdin) != NULL) {
-		if (strncmp(inbuf, "pass", 4) != 0) {
-			if (sscanf(inbuf, "%d %d", &x, &y) != 2) {
-				fprintf(stderr, "Invalid Input");
-				return 0;
-			}
+	// while (fgets(inbuf, 256, stdin) != NULL) {
+	// 	if (strncmp(inbuf, "pass", 4) != 0) {
+	// 		if (sscanf(inbuf, "%d %d", &x, &y) != 2) {
+	// 			fprintf(stderr, "Invalid Input");
+	// 			return 0;
+	// 		}
 
-			unsigned long long* temp = update(gameState, get_move(x,y),abs(color-1), x, y);
-			gameState[WHITE] = temp[WHITE];
-			gameState[BLACK] = temp[BLACK];
-		}
-		make_move();
-	}
+	// 		unsigned long long* temp = update(gameState, get_move(x,y),abs(color-1), x, y);
+	// 		gameState[WHITE] = temp[WHITE];
+	// 		gameState[BLACK] = temp[BLACK];
+	// 	}
+	// 	make_move();
+	// }
 
 	ierr = MPI_Finalize();
 	return 0;
