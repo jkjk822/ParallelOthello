@@ -1,6 +1,6 @@
 echo ======================
 #beginning game
-mpirun -np 5 -machinefile hosts ./linux/sor <<< "game b 10 0 0"
+mpirun -np 5 ./linux/sor <<< "game b 10 0 0"
 echo "Depth: 10, START"
 #middle game
 #mpirun -np 4 -machinefile hosts ./linux/sor -w 0x0002040C1408100 -b 0x0000007008040200 <<< "game b 10 0 0"

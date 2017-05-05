@@ -11,6 +11,7 @@
 #include <cstring>
 #include <sys/time.h>
 #include <string>
+#include <iostream>
 #include "structs.h"
 #define WHITE 0
 #define BLACK 1
@@ -545,6 +546,7 @@ void free_children(state* children) {
 double minimax(state *node, state* bestState, int depth, int currentPlayer, double alpha, double beta) {
 	
 	if (depth == 0 || game_over(node->board)) {
+		cout << "smallest " << heuristics(node->board, currentPlayer) << endl;
 		return heuristics(node->board, currentPlayer);
 	}
 
@@ -554,17 +556,17 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer, doub
 
 	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
 
-	sort_children(&children, currentPlayer);//TODO: remove print
+	sort_children(&children, currentPlayer);
 
-	  //  printf("Children after:");
-	//TODO: remove print
-   // printChildren(children);
-	state* current = children;//TODO: remove print
-	//printf("is current null?x: %d\n", current->x);
+	state* current = children;
+
 
 	while (current != NULL) {
 		//recurse on child
 		double result = -minimax(current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
+
+		if (depth == depthlimit)
+			cout << "Initial Best " << result << endl;
 
 		if (result >= beta) {
 			return beta;
@@ -578,6 +580,7 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer, doub
 
 		//go to next child
 		current = current->next;
+
 	}
 	free(gb);
 	free_children(children);
