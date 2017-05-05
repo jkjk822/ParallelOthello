@@ -12,7 +12,7 @@
 #include <cfloat>
 #include <string>
 #include <cstring>
-#include <vector>
+#include <queue>
 #include "mpi.h"
 #include "structs.h"
 #define WHITE 0
@@ -32,9 +32,9 @@ clock_t frameClock;
 int color;
 int guessedDepth = 0;
 int depthlimit, timelimit1, timelimit2;
-double start_alpha, start_beta;
 
 int verbose = FALSE; //Print timings for testing
+int test = 0;
 
 int turn;
 int totalStates = 0;
@@ -50,8 +50,6 @@ unsigned long long gameState[2];
 int ierr, my_id, num_procs;
 MPI_Status status;
 int root_process = 0;
-vector<double> alpha_values(35);
-//vector<double> children(35);
 int send_count = 0;
 /*
  * Counts bits iteratively
@@ -475,25 +473,13 @@ void generate_children(state* head, unsigned long long currBoard[2] , unsigned l
 
 		state* currentState = new_state();
 		previous->next = currentState;
-		previous = currentState;
+		if(moves)
+			previous = currentState;
 		totalStates++;
 	}
-
-	state* cur = head;
-	while (cur->next != NULL) {
-	if (cur->next->x == -1) {
-			cur->next = NULL;
-		break;
-	}
-	cur = cur->next;
-   }
-   cur = head;
-	while (cur != NULL) {
-		cur = cur->next;
-	}
-
-
+	previous->next = NULL;
 }
+
 
 /***********************START special functions***********************/
 
@@ -564,6 +550,8 @@ void free_children(state* children) {
 
 double minimax(state *node, int depth, int currentPlayer, double alpha, double beta) {
 	
+
+
 	if (depth == 0 || game_over(node->board)) {
 		return heuristics(node->board, currentPlayer);
 	}
@@ -592,115 +580,72 @@ double minimax(state *node, int depth, int currentPlayer, double alpha, double b
 	return alpha;
 }
 
-double master_minimax(state *node, state* bestState, int depth, int currentPlayer, double alpha, double beta) {
+void master_minimax(state *node, state* bestState, int depth, int currentPlayer) {
 
-	state gb = state();
-	if (depth == 0 || game_over(node->board)) {
-		if ((depthlimit - 1) % 2 == 0) {
-			start_alpha = heuristics(node->board, currentPlayer);
-			start_beta = beta;
-		} else {
-			start_alpha = -beta;
-			start_beta = -heuristics(node->board, currentPlayer);
-		}
-		ierr = MPI_Bcast(&start_alpha, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		ierr = MPI_Bcast(&start_beta, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		return start_alpha;
-	}
+	queue<state*> send;
+	queue<state*> receive;
+	send.push(node);
+	receive.push(node);
 
-	state* children = new_state();
-	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
-	sort_children(&children, currentPlayer);
-	state* current = children;
-	state* sendCurrent = children;
-	sendCurrent = sendCurrent->next;
+	while(send.size() < num_procs){
+		int size = send.size();
+		for(int i = 0; i < size; i++){
+			state* children = new_state();
+			generate_children(children, send.front()->board, generate_moves(send.front()->board, currentPlayer), currentPlayer);
 
-	if (depth == depthlimit) {
-		send_count = 0;
-		while(sendCurrent != NULL) {
-			int recipient = 0;
-			int temp_depthlimit = 0;
-			int temp_color = 0;
-			int i = 0;
-			
-			recipient = (send_count % (num_procs - 1)) + 1;
-			send_count++;
-			temp_depthlimit = depth - 1;
-			temp_color = abs(currentPlayer-1);
-
-			//SEND INFO TO RECIPIENT
-			MPI_Send(sendCurrent->board, 2, MPI_UNSIGNED_LONG_LONG, recipient, 100 + recipient, MPI_COMM_WORLD);
-			MPI_Send(&temp_depthlimit, 1, MPI_INT, recipient, 200 + recipient, MPI_COMM_WORLD);
-			MPI_Send(&temp_color, 1, MPI_INT, recipient, 300 + recipient, MPI_COMM_WORLD);
-
-			sendCurrent = sendCurrent->next;
-		}
-	}
-
-	//-------------------------------------------------------
-	//CALL MINIMAX ON BEST CHILD
-	double result = -master_minimax(current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
-
-	if (result >= beta) {
-		return beta;
-	}
-	if (result > alpha)
-	{
-		alpha = result;
-		bestState->board = current->board;
-		bestState->x = current->x;
-		bestState->y = current->y;
-	}
-
-	//-------------------------------------------------------
-	if (depth == depthlimit) {
-		int recipient; 
-		double temp_alpha = 0;
-		state* best_child = current;
-
-		for(int i = 0; i < send_count; i++) {
-			current = current->next;
-			recipient = (i % (num_procs - 1)) + 1;
-			MPI_Recv(&temp_alpha, 1, MPI_DOUBLE, recipient, 100 + recipient, MPI_COMM_WORLD, &status);
-			if(temp_alpha > result) {
-				result = temp_alpha;
-				best_child = current;
+			while(children != NULL){
+				if(depth != depthlimit){
+					children->x = send.front()->x;
+					children->y = send.front()->y;
+				}
+				send.push(children);
+				receive.push(children);
+				children = children->next;
 			}
-			//cout << "Update? " << temp_alpha << " " << current->x << current->y << endl;
-			
+			send.pop();
+			receive.pop();
+			// cout << "finna" << endl;
 		}
-
-		if (result >= beta) {
-			return beta;
-		}
-		if (result > alpha) {
-			alpha = result;
-			bestState->board = best_child->board;
-			bestState->x = best_child->x;
-			bestState->y = best_child->y;
-		}
-
-	} else {
-		while (current != NULL) {
-			//recurse on child
-			result = -minimax(current, depth-1, abs(currentPlayer-1), -beta, -alpha);
-
-			if (result >= beta) {
-				return beta;
-			}
-			if (result > alpha) {
-				alpha = result;
-				bestState->board = current->board;
-				bestState->x = current->x;
-				bestState->y = current->y;
-			}
-
-			//go to next child
-			current = current->next;
-		}
+		currentPlayer = abs(currentPlayer-1);
+		depth--;
 	}
-	free_children(children);
-	return alpha;
+
+	for(int send_count = 0; !send.empty(); send_count++) {
+
+		// cout << "Chillun? " << send.front() << " " << send.front()->x << send.front()->y << endl;
+		int recipient = (send_count % (num_procs - 1)) + 1;
+		int temp_depth = depth;
+		int temp_color = currentPlayer;
+
+		// cout << "w " << send.front()->board[WHITE] << endl;
+		// cout << "b " << send.front()->board[BLACK] << endl;
+		//SEND INFO TO RECIPIENT
+		MPI_Send(send.front()->board, 2, MPI_UNSIGNED_LONG_LONG, recipient, 100 + recipient, MPI_COMM_WORLD);
+		MPI_Send(&temp_depth, 1, MPI_INT, recipient, 200 + recipient, MPI_COMM_WORLD);
+		MPI_Send(&temp_color, 1, MPI_INT, recipient, 300 + recipient, MPI_COMM_WORLD);
+
+		send.pop();
+	}
+
+	double max = -DBL_MAX;
+	for(int i = 0; !receive.empty(); i++) {
+
+		int recipient = (i % (num_procs - 1)) + 1;
+		double result = 0.0;
+
+		MPI_Recv(&result, 1, MPI_DOUBLE, recipient, 100 + recipient, MPI_COMM_WORLD, &status);
+		
+		cout << "Update? " << result << " " << receive.front()->x << receive.front()->y << endl;
+		if((depthlimit-depth)%2==1)
+			result = -result;
+		if(result > max) {
+			max = result;
+			bestState->board = receive.front()->board;
+			bestState->x = receive.front()->x;
+			bestState->y = receive.front()->y;
+		}
+		receive.pop();
+	}
 }
 
 void make_move(){
@@ -713,53 +658,29 @@ void make_move(){
 	initialState->board = gameState;
 
 	state* bestState = new_state();
-	/* Timelimit2 is set - overall game time */
-	if (timelimit2 > 0) {
-			clock_t timePassed= clock() - gameClock;
-			int msec = timelimit2 - (timePassed * 1000 / CLOCKS_PER_SEC);
 
-			int depth = 0;
-			for (int i = 0; i < 14; i++) {
-				if (times[i] > msec) {
-					depth = i - 2;
-					break;
-				}
-			}
-
-			minimax(initialState, depth, color, -DBL_MAX, DBL_MAX);
-	}
-
-	/* Depthlimit is set - we only search to that depth */
-	else if (depthlimit > 0) {
-		if(my_id == root_process) {
-			master_minimax(initialState, bestState, depthlimit, color, -DBL_MAX, DBL_MAX);
-		} else {
-			int temp_depthlimit = 0;
-			int temp_color = 0;
-			double mm_val = 0.0;
-			bool firstTime = true;
-			while(true) {	
-				//recieve parameters
-				MPI_Recv(initialState->board, 2, MPI_UNSIGNED_LONG_LONG, root_process, 100 + my_id, MPI_COMM_WORLD, &status);
-				MPI_Recv(&temp_depthlimit, 1, MPI_INT, root_process, 200 + my_id, MPI_COMM_WORLD, &status);
-				MPI_Recv(&temp_color, 1, MPI_INT, root_process, 300 + my_id, MPI_COMM_WORLD, &status);
-				
-				if (firstTime) {
-					ierr = MPI_Bcast(&start_alpha, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-					ierr = MPI_Bcast(&start_beta, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-					firstTime = false;
-				}
-
-				//call minimax
-				mm_val = -minimax(initialState, temp_depthlimit, temp_color, start_alpha, start_beta);
-				//send back value;
-				MPI_Send(&mm_val, 1, MPI_DOUBLE, root_process, 100 + my_id, MPI_COMM_WORLD);
-			}
-		}
-		
+	if(my_id == root_process) {
+		master_minimax(initialState, bestState, depthlimit, color);
 	} else {
-		minimax(initialState, 10, color, -DBL_MAX, DBL_MAX);
+		int temp_depth = 0;
+		int temp_color = 0;
+		double mm_val = 0.0;
+		double alpha = 0;
+		bool firstTime = true;
+		while(true) {
+			//recieve parameters
+			MPI_Recv(initialState->board, 2, MPI_UNSIGNED_LONG_LONG, root_process, 100 + my_id, MPI_COMM_WORLD, &status);
+			MPI_Recv(&temp_depth, 1, MPI_INT, root_process, 200 + my_id, MPI_COMM_WORLD, &status);
+			MPI_Recv(&temp_color, 1, MPI_INT, root_process, 300 + my_id, MPI_COMM_WORLD, &status);
+
+			//call minimax
+			mm_val = minimax(initialState, temp_depth, temp_color, -DBL_MAX, DBL_MAX);
+			// cout << initialState->board[BLACK] << " " << mm_val << " " << temp_depth << endl;
+			//send back value;
+			MPI_Send(&mm_val, 1, MPI_DOUBLE, root_process, 100 + my_id, MPI_COMM_WORLD);
+		}
 	}
+
 
 	if (my_id == root_process) {
 		if (bestState->x == -1) {
@@ -846,27 +767,31 @@ int main(int argc, char *argv[]){
 	//wait for all threads to calculate all moves and masks
 	MPI_Barrier(MPI_COMM_WORLD);
 
-	if (color == BLACK) {
-		gettimeofday(&start, 0);
-		make_move();
-		gettimeofday(&finish, 0);
-		if(verbose)
-			fprintf(stdout, "Time: %f seconds, ", (finish.tv_sec - start.tv_sec)
-				+ (finish.tv_usec - start.tv_usec) * 0.000001);
-	}
-	// while (fgets(inbuf, 256, stdin) != NULL) {
-	// 	if (strncmp(inbuf, "pass", 4) != 0) {
-	// 		if (sscanf(inbuf, "%d %d", &x, &y) != 2) {
-	// 			fprintf(stderr, "Invalid Input");
-	// 			return 0;
-	// 		}
+	if(my_id == root_process){
+		if (color == BLACK) {
+			gettimeofday(&start, 0);
+			make_move();
+			gettimeofday(&finish, 0);
+			if(verbose)
+				fprintf(stdout, "Time: %f seconds, ", (finish.tv_sec - start.tv_sec)
+					+ (finish.tv_usec - start.tv_usec) * 0.000001);
+		}
+		while (fgets(inbuf, 256, stdin) != NULL) {
+			if (strncmp(inbuf, "pass", 4) != 0) {
+				if (sscanf(inbuf, "%d %d", &x, &y) != 2) {
+					fprintf(stderr, "Invalid Input");
+					return 0;
+				}
 
-	// 		unsigned long long* temp = update(gameState, get_move(x,y),abs(color-1), x, y);
-	// 		gameState[WHITE] = temp[WHITE];
-	// 		gameState[BLACK] = temp[BLACK];
-	// 	}
-	// 	make_move();
-	// }
+				unsigned long long* temp = update(gameState, get_move(x,y),abs(color-1), x, y);
+				gameState[WHITE] = temp[WHITE];
+				gameState[BLACK] = temp[BLACK];
+			}
+			make_move();
+		}
+	}
+	else
+		make_move();
 
 	ierr = MPI_Finalize();
 	return 0;

@@ -75,6 +75,3 @@ all: $(BIN)
 # You may have to customize the following (LINK.C for c++)
 $(BIN): $(OBJS)
 	$(LINK.c) $(OUTPUT_OPTION) $(OBJS) $(LFLAGS) $(LDFLAGS)
-                 
-clean:
-	-rm -rf $(OBJS) $(BIN) $(DEPS)
