@@ -565,7 +565,7 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer, doub
 	while (current != NULL) {
 		//recurse on child
 		double result = -minimax(current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
-		cout << "fuckall";
+
 		if (result >= beta) {
 			return beta;
 		}
