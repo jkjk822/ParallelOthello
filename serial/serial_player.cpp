@@ -546,7 +546,6 @@ void free_children(state* children) {
 double minimax(state *node, state* bestState, int depth, int currentPlayer, double alpha, double beta) {
 	
 	if (depth == 0 || game_over(node->board)) {
-		cout << "smallest " << heuristics(node->board, currentPlayer) << endl;
 		return heuristics(node->board, currentPlayer);
 	}
 
@@ -557,7 +556,6 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer, doub
 	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
 
 	sort_children(&children, currentPlayer);
-
 	state* current = children;
 
 	while (current != NULL) {
@@ -565,9 +563,6 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer, doub
 		double result = -minimax(current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
 		// if(depth == depthlimit)
 		// 		cout << "Update? " << result << " " << current->x << current->y << endl;
-
-		if (depth == depthlimit)
-			cout << "Initial Best " << result << endl;
 
 		if (result >= beta) {
 			return beta;
@@ -581,7 +576,6 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer, doub
 
 		//go to next child
 		current = current->next;
-
 	}
 	free_children(children);
 
