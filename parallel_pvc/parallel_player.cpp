@@ -12,7 +12,7 @@
 #include <sys/time.h>
 #include <string>
 #include <iostream>
-#include "ctpl.h"
+#include "ctpl.h" //https://github.com/vit-vit/CTPL/
 #include "structs.h"
 #define WHITE 0
 #define BLACK 1
@@ -43,7 +43,7 @@ unsigned long long gameState[2];
 int verbose = FALSE; //Print timings for testing
 
 ctpl::thread_pool pool(8);
-#define SERIAL_DEPTH 1
+#define SERIAL_DEPTH 1 //Depth at which minimax becomes totally serial
 
 /*
  * Counts bits iteratively
@@ -530,6 +530,9 @@ void sort_children(state** node, int player){
 	*node = bestNode;
 }
 
+/*
+* Free singly-linked list of states
+*/
 void free_list(state* list) {
 	state* node = list;
 	while (node != NULL) {
@@ -541,10 +544,16 @@ void free_list(state* list) {
 }
 
 /*
-* Serial Minimax
+* Serial Alpha-Beta negamax
+* called by slave threads to serially execute their subtree
+* node - the initial board state
+* depth - how much deeper this call should dive (e.g. starts high gets decremented)
+* currentPlayer - color of player to move (only 0 [White] or 1 [Black])
+* alpha/beta - values used to prune
 */
 double minimax_serial(int thread_id, state* node, int depth, int currentPlayer, double alpha, double beta) {
 
+	//return when depth limit reached, or is actual leaf node
 	if (depth == 0 || game_over(node->board)) {
 		return heuristics(node->board, currentPlayer);
 	}
@@ -560,7 +569,8 @@ double minimax_serial(int thread_id, state* node, int depth, int currentPlayer, 
 		//recurse on child
 		double result = -minimax_serial(thread_id, current, depth-1, abs(currentPlayer-1), -beta, -alpha);
 
-		if (result >= beta) {
+		if (result >= beta) { //prune
+			free_list(children);
 			return beta;
 		}
 		if (result > alpha) {
@@ -572,18 +582,26 @@ double minimax_serial(int thread_id, state* node, int depth, int currentPlayer, 
 	}
 
 	free_list(children);
-
-
 	return alpha;
 }
 
+/*
+* Parallel Alpha-Beta negamax
+* called by master thread to recurse down left branch
+* node - the initial board state
+* bestState - stores best move (Only used at the top level)
+* depth - how much deeper this call should dive (e.g. starts high gets decremented)
+* currentPlayer - color of player to move (only 0 [White] or 1 [Black])
+* alpha/beta - values used to prune
+*/
 double minimax(state* node, state* bestState, int depth, int currentPlayer,double alpha, double beta) {
 
+	//return when depth limit reached, or is actual leaf node
 	if (depth == 0 || game_over(node->board)) {
 		return heuristics(node->board, currentPlayer);
 	}
 
-	state gb = state();
+	state gb = state(); //throwaway state
 	state* children = new_state();
 
 	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
@@ -591,10 +609,10 @@ double minimax(state* node, state* bestState, int depth, int currentPlayer,doubl
 	sort_children(&children, currentPlayer);
 	state* current = children;
 
-	//recurse on child
+	//recurse on first child
 	double result = -minimax(current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
 
-	if (result >= beta) {
+	if (result >= beta) { //prune
 		free_list(children);
 		return beta;
 	}
@@ -607,12 +625,13 @@ double minimax(state* node, state* bestState, int depth, int currentPlayer,doubl
 
 	//go to next child
 	current = current->next;
-	vector<future<double>> results;
+
+	vector<future<double>> results; //results from children (async)
 	results.reserve(10); //10 is average branching factor
 
 	while(current != NULL){
 		//No more parallel branching in subtrees of SERIAL_DEPTH
-		if(depth > SERIAL_DEPTH && pool.n_idle() > 0){ //Do in pool if idle threads
+		if(depth > SERIAL_DEPTH && pool.n_idle() > 0){ //Asynchronously do in pool if idle threads
 			results.push_back(pool.push(minimax_serial, current, depth-1, abs(currentPlayer-1), -beta, -alpha));
 		}
 		else{ //Else do yourself
@@ -626,9 +645,11 @@ double minimax(state* node, state* bestState, int depth, int currentPlayer,doubl
 
 	if(!results.empty()){
 		current = children->next;
+
+		//Retrieve futures
 		for(int i = 0; i < results.size(); i++){
-			double val = -results[i].get();
-			if(val > result){
+			double val = -results[i].get(); //Will block here until fulfilled
+			if(val > result){ //if better child found
 				result = val;
 				bestState->board = current->board;
 				bestState->x = current->x;
@@ -637,7 +658,7 @@ double minimax(state* node, state* bestState, int depth, int currentPlayer,doubl
 			current = current->next;
 		}
 
-		if (result >= beta) {
+		if (result >= beta) { //prune
 			free_list(children);
 			return beta;
 		}
@@ -645,11 +666,16 @@ double minimax(state* node, state* bestState, int depth, int currentPlayer,doubl
 			alpha = result;
 		}
 	}
+
 	free_list(children);
 	return alpha;
 }
 
-
+/*
+* Repeatedly called in main to progress game
+* Initial call to minimax. Gets best move,
+* makes it, and updates board.
+*/
 void make_move(){
 
 	frameClock = clock();
