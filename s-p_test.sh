@@ -1,2 +1,2 @@
 #!/bin/bash
-./tournament gui serial parallel 6 0 0
+./tournament gui parallel_ybwc parallel_pvs 5 0 0
