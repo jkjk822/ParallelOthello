@@ -809,27 +809,31 @@ int main(int argc, char *argv[]){
 	//wait for all threads to calculate all moves and masks
 	MPI_Barrier(MPI_COMM_WORLD);
 
-	if (color == BLACK) {
-		gettimeofday(&start, 0);
-		make_move();
-		gettimeofday(&finish, 0);
-		if(verbose)
-			fprintf(stdout, "Time: %f seconds, ", (finish.tv_sec - start.tv_sec)
-				+ (finish.tv_usec - start.tv_usec) * 0.000001);
-	}
-	// while (fgets(inbuf, 256, stdin) != NULL) {
-	// 	if (strncmp(inbuf, "pass", 4) != 0) {
-	// 		if (sscanf(inbuf, "%d %d", &x, &y) != 2) {
-	// 			fprintf(stderr, "Invalid Input");
-	// 			return 0;
-	// 		}
+	if (my_id == root_process) {
+		if (color == BLACK) {
+			gettimeofday(&start, 0);
+			make_move();
+			gettimeofday(&finish, 0);
+			if(verbose)
+				fprintf(stdout, "Time: %f seconds, ", (finish.tv_sec - start.tv_sec)
+					+ (finish.tv_usec - start.tv_usec) * 0.000001);
+		}
+		while (fgets(inbuf, 256, stdin) != NULL) {
+			if (strncmp(inbuf, "pass", 4) != 0) {
+				if (sscanf(inbuf, "%d %d", &x, &y) != 2) {
+					fprintf(stderr, "Invalid Input");
+					return 0;
+				}
 
-	// 		unsigned long long* temp = update(gameState, get_move(x,y),abs(color-1), x, y);
-	// 		gameState[WHITE] = temp[WHITE];
-	// 		gameState[BLACK] = temp[BLACK];
-	// 	}
-	// 	make_move();
-	// }
+				unsigned long long* temp = update(gameState, get_move(x,y),abs(color-1), x, y);
+				gameState[WHITE] = temp[WHITE];
+				gameState[BLACK] = temp[BLACK];
+			}
+			make_move();
+		}
+	} else {
+		make_move();
+	}
 
 	ierr = MPI_Finalize();
 	return 0;
