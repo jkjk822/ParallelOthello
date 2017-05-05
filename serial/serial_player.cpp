@@ -526,6 +526,9 @@ void sort_children(state** node, int player){
 	*node = bestNode;
 }
 
+/*
+* Free singly-linked list of states
+*/
 void free_children(state* children) {
 	state* node = children;
 	while (node != NULL) {
@@ -536,14 +539,22 @@ void free_children(state* children) {
 	}
 }
 
+/*
+* Alpha-Beta negamax
+* node - the initial board state
+* bestState - stores best move (Only used at the top level)
+* depth - how much deeper this call should dive (e.g. starts high gets decremented)
+* currentPlayer - color of player to move (only 0 [White] or 1 [Black])
+* alpha/beta - values used to prune
+*/
 double minimax(state *node, state* bestState, int depth, int currentPlayer, double alpha, double beta) {
 	
+	//return when depth limit reached, or is actual leaf node
 	if (depth == 0 || game_over(node->board)) {
 		return heuristics(node->board, currentPlayer);
 	}
 
-	state gb = state();
-	
+	state gb = state(); //throwaway state
 	state* children = new_state();
 
 	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
@@ -554,10 +565,9 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer, doub
 	while (current != NULL) {
 		//recurse on child
 		double result = -minimax(current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
-		// if(depth == depthlimit)
-		// 		cout << "Update? " << result << " " << current->x << current->y << endl;
 
-		if (result >= beta) {
+		if (result >= beta) { //prune
+			free_children(children);
 			return beta;
 		}
 		if (result > alpha) {
@@ -570,12 +580,16 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer, doub
 		//go to next child
 		current = current->next;
 	}
-	free_children(children);
 
+	free_children(children);
 	return alpha;
 }
 
-
+/*
+* Repeatedly called in main to progress game
+* Initial call to minimax. Gets best move,
+* makes it, and updates board.
+*/
 void make_move(){
 
 	frameClock = clock();
@@ -656,6 +670,7 @@ int main(int argc, char **argv){
 	char playerstring;
 	int x,y,c;
 	struct timeval start, finish;
+
 	turn = 0;
 	new_game(); //Setup default board state
 
@@ -674,7 +689,6 @@ int main(int argc, char **argv){
 	default:
 		exit(1);
 	}
-
 
 	if (fgets(inbuf, 256, stdin) == NULL){
 		error("Couldn't read from inpbuf");
