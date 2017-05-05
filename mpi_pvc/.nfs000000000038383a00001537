@@ -1,6 +1,6 @@
 ARCH = $(shell uname|tr '[A-Z]' '[a-z]')
 #CC = /u/cs458/$(ARCH)/bin/mpicc
-CC = mpic++ -g
+CC = mpic++
 #########################################################################
 # At the bare minimum, you'll need to edit the following two lines
 # all objects and binaries will be in the directory ${ARCH}

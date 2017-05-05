@@ -645,7 +645,7 @@ void make_move(){
 		fflush(stdout);
 	} else {
 		if(verbose)
-			printf("M: %d %d\n", bestState->x, bestState->y);
+			printf("M: %d %d ", bestState->x, bestState->y);
 		else
 			printf("%d %d\n", bestState->x, bestState->y);
 		fflush(stdout);
