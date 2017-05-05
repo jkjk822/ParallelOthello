@@ -12,9 +12,9 @@
 #include <sys/time.h>
 #include <string>
 #include <iostream>
+#include <boost/thread/futures/wait_for_all.hpp>
 #include "ctpl.h"
 #include "structs.h"
-#include <unordered_map>
 #define WHITE 0
 #define BLACK 1
 #define FALSE 0
@@ -450,7 +450,7 @@ unsigned long long* update(unsigned long long currBoard[2], unsigned long long m
 /*
  * Generate all children and store in linked list given by head, with current board, board of possible moves, and color to move
  */
-void generate_children(state* head, unsigned long long currBoard[2] , unsigned long long moves, int color){
+void generate_children(state* head, unsigned long long currBoard[2], unsigned long long moves, int color){
 
 	state* previous = head;
 	unsigned long long board[2][4];
@@ -467,18 +467,11 @@ void generate_children(state* head, unsigned long long currBoard[2] , unsigned l
 
 		state* currentState = new_state();
 		previous->next = currentState;
-		previous = currentState;
+		if(moves)
+			previous = currentState;
 		totalStates++;
 	}
-
-	state* cur = head;
-	while (cur->next != NULL) {
-		if (cur->next->x == -1) {
-			cur->next = NULL;
-			break;
-		}
-		cur = cur->next;
-	}
+	previous->next = NULL;
 }
 
 /***********************START special functions***********************/
@@ -585,14 +578,12 @@ double minimax_serial(state* node, int depth, int currentPlayer, double alpha, d
 }
 
 double minimax(int thread_id, state* node, state* bestState, int depth, int currentPlayer,double alpha, double beta) {
-	if(!node->board)
-		cout << thread_id << " " << depth << " NOO" << endl;
-
+	
 	if (depth == 0 || game_over(node->board)) {
 		return heuristics(node->board, currentPlayer);
 	}
 
-	state gb = state();
+	state* gb = new_state();
 	state* children = new_state();
 
 	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
@@ -601,10 +592,10 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 	state* current = children;
 
 	//recurse on child
-	double result = -minimax(thread_id, current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
+	double result = -minimax(thread_id, current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
 
 	if (result >= beta) {
-		free_list(children);
+		// free_list(children);
 		return beta;
 	}
 	if (result > alpha)	{
@@ -616,13 +607,15 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 
 	//go to next child
 	current = current->next;
+
+	int return_val = 0;
 	vector<future<double>> results;
 	results.reserve(10); //10 is average branching factor
 
 	// if(thread_id == -1 && depth == depthlimit)
-	// 	cout << thread_id << "Initial Best " << result << endl;
+	// 	cout << "Initial Best " << result << endl;
 	while(current != NULL){
-		if(depth <= SERIAL_DEPTH){ //No more parallel branching in subtrees of SERIAL_DEPTH
+		/*if(depth <= SERIAL_DEPTH){ //No more parallel branching in subtrees of SERIAL_DEPTH
 			result = -minimax_serial(current, depth-1, abs(currentPlayer-1), -beta, -alpha);
 			if (result >= beta) {
 				free_list(children);
@@ -635,49 +628,45 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 				bestState->y = current->y;
 			}
 		}
-		else if(pool.n_idle() > 0) //Do in pool if idle threads
-			results.push_back(pool.push(minimax, current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha));
+		else*/ if(pool.n_idle() > 0) //Do in pool if idle threads
+			results.push_back(pool.push(minimax, current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha));
 		else{ //Else do yourself
-			result = -minimax(thread_id, current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
-			if (result >= beta) {
-				free_list(children);
-				return beta;
-			}
-			if (result > alpha)	{
-				alpha = result;
-				bestState->board = current->board;
-				bestState->x = current->x;
-				bestState->y = current->y;
-			}
+			result = -minimax(thread_id, current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
+
+			promise<double> fake;
+			results.push_back(fake.get_future());
+			fake.set_value(-result);
+			
+			// if(thread_id == -1 && depth == depthlimit)
+			// 	cout << "Otherdate? " << result << " " << current->x << current->y << endl;
 		}
 		current = current->next;
 	}
 	if(!results.empty()){
 		current = children->next;
-		state* best_child = NULL;
+		// boost::wait_for_all(begin(results), end(results));
 		for(int i = 0; i < results.size(); i++){
 			double val = -results[i].get();
 			if(val > result){
 				result = val;
-				best_child = current;
+				bestState->board = current->board;
+				bestState->x = current->x;
+				bestState->y = current->y;
 			}
 			// if(thread_id == -1 && depth == depthlimit)
-			// 	cout << thread_id << "Update? " << val << " " << current->x << current->y << endl;
+			// 	cout << "Update? " << val << " " << current->x << current->y << endl;
 			current = current->next;
 		}
 
 		if (result >= beta) {
-			free_list(children);
+			// free_list(children);
 			return beta;
 		}
 		if (result > alpha)	{
 			alpha = result;
-			bestState->board = best_child->board;
-			bestState->x = best_child->x;
-			bestState->y = best_child->y;
 		}
 	}
-	free_list(children);
+	// free_list(children);
 	return alpha;
 }
 
