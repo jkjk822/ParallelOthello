@@ -589,7 +589,7 @@ double minimax(state* node, state* bestState, int depth, int currentPlayer,doubl
 		return heuristics(node->board, currentPlayer);
 	}
 
-	state* gb = new_state();
+	state gb = state();
 	state* children = new_state();
 
 	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
@@ -598,9 +598,7 @@ double minimax(state* node, state* bestState, int depth, int currentPlayer,doubl
 	state* current = children;
 
 	//recurse on child
-	double result = -minimax(current, gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
-	free(gb);
-	gb = NULL;
+	double result = -minimax(current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
 
 	if (result >= beta) {
 		free_list(children);
@@ -642,12 +640,12 @@ double minimax(state* node, state* bestState, int depth, int currentPlayer,doubl
 
 	if(!results.empty()){
 		current = children->next;
-		state* bestChild = NULL;
+		state* best_child = NULL;
 		for(int i = 0; i < results.size(); i++){
 			double val = -results[i].get();
 			if(val > result){
 				result = val;
-				bestChild = current;
+				best_child = current;
 			}
 			// cout << "Update? " << val << " " << current->x << current->y << endl;
 			current = current->next;
@@ -659,9 +657,9 @@ double minimax(state* node, state* bestState, int depth, int currentPlayer,doubl
 		}
 		if (result > alpha)	{
 			alpha = result;
-			bestState->board = bestChild->board;
-			bestState->x = bestChild->x;
-			bestState->y = bestChild->y;
+			bestState->board = best_child->board;
+			bestState->x = best_child->x;
+			bestState->y = best_child->y;
 		}
 	}
 	free_list(children);
