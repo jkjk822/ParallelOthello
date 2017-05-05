@@ -636,9 +636,6 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 			results.push_back(fake.get_future()); //Imitate pushing call
 			//Fulfill immediately
 			fake.set_value(minimax(thread_id, current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha));
-
-			// if(thread_id == -1 && depth == depthlimit)
-			// 	cout << "Otherdate? " << result << " " << current->x << current->y << endl;
 		}
 		current = current->next;
 	}
