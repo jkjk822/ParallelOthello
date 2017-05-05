@@ -7,6 +7,7 @@ struct state{
     int y;
     double val;
     struct state* next;
+    state() : board(NULL), x(-1), y(-1), val(0), next(NULL) {}
 };
 
 #endif
