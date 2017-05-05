@@ -42,7 +42,7 @@ unsigned long long gameState[2];
 
 int verbose = FALSE; //Print timings for testing
 
-ctpl::thread_pool pool(4);
+ctpl::thread_pool pool(8);
 #define SERIAL_DEPTH 1
 
 /*
@@ -610,8 +610,6 @@ double minimax(state* node, state* bestState, int depth, int currentPlayer,doubl
 	vector<future<double>> results;
 	results.reserve(10); //10 is average branching factor
 
-	// if(depth == depthlimit)
-	// 	cout << "Initial Best " << result << endl;
 	while(current != NULL){
 		//No more parallel branching in subtrees of SERIAL_DEPTH
 		if(depth > SERIAL_DEPTH && pool.n_idle() > 0){ //Do in pool if idle threads
@@ -636,8 +634,6 @@ double minimax(state* node, state* bestState, int depth, int currentPlayer,doubl
 				bestState->x = current->x;
 				bestState->y = current->y;
 			}
-			// if(depth == depthlimit)
-			// 	cout << "Update? " << val << " " << current->x << current->y << endl;
 			current = current->next;
 		}
 
@@ -734,11 +730,12 @@ int main(int argc, char **argv){
 	char playerstring;
 	int x,y,c;
 	struct timeval start, finish;
+
 	turn = 0;
 	new_game(); //Setup default board state
 
 	//Read in initial board state if specified (overwrites new_game)
-	while ((c = getopt(argc, argv, "b:w:v::")) != -1)
+	while ((c = getopt(argc, argv, "t:b:w:v::")) != -1)
 	switch (c) {
 	case 'b':
 		gameState[BLACK] = strtoll(optarg, NULL, 16);
@@ -746,13 +743,16 @@ int main(int argc, char **argv){
 	case 'w':
 		gameState[WHITE] = strtoll(optarg, NULL, 16);
 		break;
+	case 't':
+		//Start up `t` threads
+		pool.resize(atoi(optarg));
+		break;
 	case 'v':
 		verbose = TRUE;
 		break;
 	default:
 		exit(1);
 	}
-
 
 	if (fgets(inbuf, 256, stdin) == NULL){
 		error("Couldn't read from inpbuf");

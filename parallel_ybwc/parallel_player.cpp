@@ -12,7 +12,6 @@
 #include <sys/time.h>
 #include <string>
 #include <iostream>
-#include <boost/thread/futures/wait_for_all.hpp>
 #include "ctpl.h"
 #include "structs.h"
 #define WHITE 0
@@ -43,7 +42,7 @@ unsigned long long gameState[2];
 
 int verbose = FALSE; //Print timings for testing
 
-ctpl::thread_pool pool(4);
+ctpl::thread_pool pool(8);
 #define SERIAL_DEPTH 1
 
 /*
@@ -612,8 +611,6 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 	vector<future<double>> results;
 	results.reserve(10); //10 is average branching factor
 
-	// if(thread_id == -1 && depth == depthlimit)
-	// 	cout << "Initial Best " << result << endl;
 	while(current != NULL){
 		if(depth <= SERIAL_DEPTH){ //No more parallel branching in subtrees of SERIAL_DEPTH
 			promise<double> fake; //Fake future
@@ -633,7 +630,6 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 	}
 	if(!results.empty()){
 		current = children->next;
-		// boost::wait_for_all(begin(results), end(results));
 		for(int i = 0; i < results.size(); i++){
 			double val = -results[i].get();
 			if(val > result){
@@ -642,8 +638,6 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 				bestState->x = current->x;
 				bestState->y = current->y;
 			}
-			// if(thread_id == -1 && depth == depthlimit)
-			// 	cout << "Update? " << val << " " << current->x << current->y << endl;
 			current = current->next;
 		}
 
@@ -740,11 +734,12 @@ int main(int argc, char **argv){
 	char playerstring;
 	int x,y,c;
 	struct timeval start, finish;
+
 	turn = 0;
 	new_game(); //Setup default board state
 
 	//Read in initial board state if specified (overwrites new_game)
-	while ((c = getopt(argc, argv, "b:w:v::")) != -1)
+	while ((c = getopt(argc, argv, "t:b:w:v::")) != -1)
 	switch (c) {
 	case 'b':
 		gameState[BLACK] = strtoll(optarg, NULL, 16);
@@ -752,13 +747,16 @@ int main(int argc, char **argv){
 	case 'w':
 		gameState[WHITE] = strtoll(optarg, NULL, 16);
 		break;
+	case 't':
+		//Start up `t` threads
+		pool.resize(atoi(optarg));
+		break;
 	case 'v':
 		verbose = TRUE;
 		break;
 	default:
 		exit(1);
 	}
-
 
 	if (fgets(inbuf, 256, stdin) == NULL){
 		error("Couldn't read from inpbuf");
