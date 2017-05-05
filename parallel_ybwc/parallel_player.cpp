@@ -630,7 +630,6 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 	results.reserve(10); //10 is average branching factor
 
 	while(current != NULL){
-		//No more parallel branching in subtrees of SERIAL_DEPTH
 		if(depth <= SERIAL_DEPTH){ //No more parallel branching in subtrees of SERIAL_DEPTH
 			promise<double> fake; //Fake future
 			results.push_back(fake.get_future()); //Imitate pushing call

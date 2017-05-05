@@ -567,6 +567,7 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer, doub
 		double result = -minimax(current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
 
 		if (result >= beta) { //prune
+			free_children(children);
 			return beta;
 		}
 		if (result > alpha) {
