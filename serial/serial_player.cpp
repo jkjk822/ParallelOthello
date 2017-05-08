@@ -34,7 +34,7 @@ int totalStates = 0;
 int times[] = {10,10,10,10,10,20,50,100,1000,10000,80000, 200000, 2000000, 2000000};
 
 unsigned char mask[8] = {0xffu,0xfeu,0xfcu,0xf8u,0xf0u,0xe0u,0xc0u,0x80u}; //mask out, respectively, no bit, far right bit, far right 2 bits, etc.
-unsigned char moveTable[256][256][2]; //stores all moves (by row) based on [white row config][black row config][color to move]
+unsigned char moveTable[256][256]; //stores all moves (by row) based on [white row config][black row config] with white to move
 unsigned long long maskTable[8][8][4]; //stores all shift masks for any given move location
 unsigned long long gameState[2];
 
@@ -106,8 +106,9 @@ unsigned get_shift(unsigned long long move){
 
 /*
  * Compute white moves (for moveTable) based on row config w(hite) and b(lack)
+ * with white to move
  */
-unsigned char compute_white_moves(unsigned char w, unsigned char b){
+unsigned char compute_moves(unsigned char w, unsigned char b){
 	if(!(w^b)) //no pieces in this area or pieces occupy the same space
 		return 0;
 
@@ -136,24 +137,13 @@ unsigned char compute_white_moves(unsigned char w, unsigned char b){
 }
 
 /*
- * Compute black moves (for moveTable) based on row config i(white) and j(black)
- * (done by pretending colors are reversed and finding white moves)
- */
-unsigned char compute_black_moves(unsigned char i, unsigned char j){
-	return compute_white_moves(j, i);
-}
-
-/*
  * Fill moveTable (pre-computation)
  */
-void compute_all_moves(unsigned char moves[256][256][2]){
+void compute_all_moves(unsigned char moves[256][256]){
 	for (int i = 0; i < 256; i++) {
 		for (int j = 0; j < 256; j++) {
-			//Compute all legal white moves given i and j
-			moves[i][j][WHITE] = compute_white_moves(i,j);
-
-			//Compute all legal black moves given i and j
-			moves[i][j][BLACK] = compute_black_moves(i,j);
+			//Compute all legal moves given i and j
+			moves[i][j] = compute_moves(i,j);
 		}
 	}
 }
@@ -275,6 +265,16 @@ void compute_rotations(unsigned long long board[2][4]){
 }
 
 /*
+ * Wrapper function for moveTable
+ */
+unsigned char moves(unsigned char w, unsigned char b, int color){
+	if(color == WHITE)
+		return moveTable[w][b];
+	else //treat black as white
+		return moveTable[b][w]; 
+}
+
+/*
  * Generate moves using moveTable, current board, and color to move
  */
 unsigned long long _generate_moves(unsigned long long board[2][4], int color){
@@ -285,12 +285,12 @@ unsigned long long _generate_moves(unsigned long long board[2][4], int color){
 	unsigned long long boardL45 = 0;
 
 	for(unsigned char i = 0; i<8; i++){ //must cast to long long because fuck C (all untyped numbers are int by default)
-		boardR0 |= (long long)moveTable[(board[WHITE][R0]>>(8*(7-i)))&mask[0]][(board[BLACK][R0]>>(8*(7-i)))&mask[0]][color] << (8*(7-i));
-		boardR90 |= (long long)moveTable[(board[WHITE][R90]>>(8*(7-i)))&mask[0]][(board[BLACK][R90]>>(8*(7-i)))&mask[0]][color] << (8*(7-i));
-		boardR45 |= ((long long)moveTable[(board[WHITE][R45]>>(8*(7-i)))&mask[i]][(board[BLACK][R45]>>(8*(7-i)))&mask[i]][color]&mask[i]) << (8*(7-i));
-		boardL45 |= ((long long)moveTable[(board[WHITE][L45]>>(8*(7-i)))&mask[7-i]][(board[BLACK][L45]>>(8*(7-i)))&mask[7-i]][color]&mask[7-i]) << (8*(7-i));
-		boardR45 |= ((long long)moveTable[(board[WHITE][R45]>>(8*(7-i)))&(~mask[i]&mask[0])][(board[BLACK][R45]>>(8*(7-i)))&(~mask[i]&mask[0])][color]&(~mask[i]&mask[0])) << (8*(7-i));
-		boardL45 |= ((long long)moveTable[(board[WHITE][L45]>>(8*(7-i)))&(~mask[7-i]&mask[0])][(board[BLACK][L45]>>(8*(7-i)))&(~mask[7-i]&mask[0])][color]&(~mask[7-i]&mask[0])) << (8*(7-i));
+		boardR0 |= (long long) moves((board[WHITE][R0]>>(8*(7-i)))&mask[0], (board[BLACK][R0]>>(8*(7-i)))&mask[0], color) << (8*(7-i));
+		boardR90 |= (long long) moves((board[WHITE][R90]>>(8*(7-i)))&mask[0],(board[BLACK][R90]>>(8*(7-i)))&mask[0], color) << (8*(7-i));
+		boardR45 |= ((long long) moves((board[WHITE][R45]>>(8*(7-i)))&mask[i], (board[BLACK][R45]>>(8*(7-i)))&mask[i], color) & mask[i]) << (8*(7-i));
+		boardL45 |= ((long long) moves((board[WHITE][L45]>>(8*(7-i)))&mask[7-i], (board[BLACK][L45]>>(8*(7-i)))&mask[7-i], color) & mask[7-i]) << (8*(7-i));
+		boardR45 |= ((long long) moves((board[WHITE][R45]>>(8*(7-i)))&(~mask[i]&mask[0]), (board[BLACK][R45]>>(8*(7-i)))&(~mask[i]&mask[0]), color) & (~mask[i]&mask[0])) << (8*(7-i));
+		boardL45 |= ((long long) moves((board[WHITE][L45]>>(8*(7-i)))&(~mask[7-i]&mask[0]), (board[BLACK][L45]>>(8*(7-i)))&(~mask[7-i]&mask[0]), color) & (~mask[7-i]&mask[0])) << (8*(7-i));
 	}
 	return boardR0|l90(boardR90)|l45(boardR45)|r45(boardL45);
 
