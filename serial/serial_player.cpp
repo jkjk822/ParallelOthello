@@ -13,10 +13,8 @@
 #include <string>
 #include <iostream>
 #include "structs.h"
-#define WHITE 0
-#define BLACK 1
-#define FALSE 0
-#define TRUE 1
+#define WHITE false
+#define BLACK true
 #define R0 0 //0 rotation
 #define R90 1 //90 degrees right rotation
 #define R45 2 //45 degrees right rotation
@@ -26,7 +24,7 @@ using namespace std;
 
 clock_t gameClock;
 clock_t frameClock;
-int color;
+bool my_color;
 int guessedDepth = 0;
 int depthlimit, timelimit1, timelimit2;
 int turn;
@@ -38,7 +36,7 @@ unsigned char moveTable[256][256]; //stores all moves (by row) based on [white r
 unsigned long long maskTable[8][8][4]; //stores all shift masks for any given move location
 unsigned long long gameState[2];
 
-int verbose = FALSE; //Print timings for testing
+int verbose = false; //Print timings for testing
 
 
 /*
@@ -267,7 +265,7 @@ void compute_rotations(unsigned long long board[2][4]){
 /*
  * Wrapper function for moveTable
  */
-unsigned char moves(unsigned char w, unsigned char b, int color){
+unsigned char moves(unsigned char w, unsigned char b, bool color){
 	if(color == WHITE)
 		return moveTable[w][b];
 	else //treat black as white
@@ -277,7 +275,7 @@ unsigned char moves(unsigned char w, unsigned char b, int color){
 /*
  * Generate moves using moveTable, current board, and color to move
  */
-unsigned long long _generate_moves(unsigned long long board[2][4], int color){
+unsigned long long _generate_moves(unsigned long long board[2][4], bool color){
 
 	unsigned long long boardR0 = 0;
 	unsigned long long boardR90 = 0;
@@ -299,7 +297,7 @@ unsigned long long _generate_moves(unsigned long long board[2][4], int color){
 /*
  * Generate moves using moveTable, current board, and color to move
  */
-unsigned long long generate_moves(unsigned long long currBoard[2], int color){
+unsigned long long generate_moves(unsigned long long currBoard[2], bool color){
 	unsigned long long board[2][4];
 	board[WHITE][R0] = currBoard[WHITE];
 	board[BLACK][R0] = currBoard[BLACK];
@@ -311,7 +309,7 @@ unsigned long long generate_moves(unsigned long long currBoard[2], int color){
 /*
  * Calculate value of a board position
  */
-double heuristics(unsigned long long board[2], int color){
+double heuristics(unsigned long long board[2], bool color){
 	double corner = 801.724;
 	double closeCorner = 382.026;
 	double piece = 10;
@@ -319,7 +317,7 @@ double heuristics(unsigned long long board[2], int color){
 
 	//Find piece diff
 	double playerPieces = bit_count(board[color]);
-	double opponentPieces = bit_count(board[abs(color-1)]);
+	double opponentPieces = bit_count(board[!color]);
 	double pieceDiff = 0;
 
 	pieceDiff = 100*(playerPieces-opponentPieces)/(playerPieces+opponentPieces);
@@ -331,7 +329,7 @@ double heuristics(unsigned long long board[2], int color){
 
 	compute_rotations(rBoard); //pre-compute rotations
 	double playerMobil = bit_count(_generate_moves(rBoard, color));
-	double opponentMobil = bit_count(_generate_moves(rBoard, abs(color-1)));
+	double opponentMobil = bit_count(_generate_moves(rBoard, !color));
 	double mobilDiff = 0;
 
 	if(playerMobil+opponentMobil != 0) {
@@ -342,7 +340,7 @@ double heuristics(unsigned long long board[2], int color){
 
 	//Find corner diff
 	double playerCorner = iter_count(board[color]&0x8100000000000081u);
-	double opponentCorner = iter_count(board[abs(color-1)]&0x8100000000000081u);
+	double opponentCorner = iter_count(board[!color]&0x8100000000000081u);
 	double cornerDiff = 0;
 
 	if ((playerCorner+opponentCorner) != 0) {
@@ -352,7 +350,7 @@ double heuristics(unsigned long long board[2], int color){
 	//Find close corner diff
 	//TODO: see if this calculation method is correct
 	double playerCloseCorner = bit_count(board[color]&0x42c300000000c342u);
-	double opponentCloseCorner = bit_count(board[abs(color-1)]&0x42c300000000c342u);
+	double opponentCloseCorner = bit_count(board[!color]&0x42c300000000c342u);
 	double closeCornerDiff = 0;
 
 	if ((playerCloseCorner+opponentCloseCorner) != 0) {
@@ -417,24 +415,24 @@ unsigned long long flip(unsigned long long w, unsigned long long b, unsigned lon
 /*
  * Generate a child given current board, next move, color to move, col of move, and row of move
  */
-unsigned long long* generate_child(unsigned long long board[2][4], unsigned long long move, int color, int x, int y){
+unsigned long long* generate_child(unsigned long long board[2][4], unsigned long long move, bool color, int x, int y){
 	unsigned long long* newBoard = (unsigned long long*) malloc(sizeof(unsigned long long)*2);
 
 	unsigned long long flipped =
-			flip(board[color][R0]&maskTable[x][y][R0], board[abs(color-1)][R0]&maskTable[x][y][R0],move)
-			|l90(flip(board[color][R90]&maskTable[x][y][R90], board[abs(color-1)][R90]&maskTable[x][y][R90],r90(move)))
-			|l45(flip(board[color][R45]&maskTable[x][y][R45], board[abs(color-1)][R45]&maskTable[x][y][R45],r45(move)))
-			|r45(flip(board[color][L45]&maskTable[x][y][L45], board[abs(color-1)][L45]&maskTable[x][y][L45],l45(move)));
+			flip(board[color][R0]&maskTable[x][y][R0], board[!color][R0]&maskTable[x][y][R0],move)
+			|l90(flip(board[color][R90]&maskTable[x][y][R90], board[!color][R90]&maskTable[x][y][R90],r90(move)))
+			|l45(flip(board[color][R45]&maskTable[x][y][R45], board[!color][R45]&maskTable[x][y][R45],r45(move)))
+			|r45(flip(board[color][L45]&maskTable[x][y][L45], board[!color][L45]&maskTable[x][y][L45],l45(move)));
 
 	newBoard[color] = flipped|move|board[color][0]; //add flipped pieces and this move to players old board
-	newBoard[abs(color-1)] = board[abs(color-1)][0]&~flipped; //remove flipped pieces from opponents old board
+	newBoard[!color] = board[!color][0]&~flipped; //remove flipped pieces from opponents old board
 	return newBoard;
 }
 
 /*
  * Update board given current board, next move, and color to move
  */
-unsigned long long* update(unsigned long long currBoard[2], unsigned long long move, int color, int x, int y){
+unsigned long long* update(unsigned long long currBoard[2], unsigned long long move, bool color, int x, int y){
 	unsigned long long board[2][4];
 	board[WHITE][R0] = currBoard[WHITE];
 	board[BLACK][R0] = currBoard[BLACK];
@@ -445,7 +443,7 @@ unsigned long long* update(unsigned long long currBoard[2], unsigned long long m
 /*
  * Generate all children and store in linked list given by head, with current board, board of possible moves, and color to move
  */
-void generate_children(state* head, unsigned long long currBoard[2], unsigned long long moves, int color){
+void generate_children(state* head, unsigned long long currBoard[2], unsigned long long moves, bool color){
 
 	state* previous = head;
 	unsigned long long board[2][4];
@@ -489,11 +487,11 @@ int game_over(unsigned long long board[2]){
 /*
 * Gets the best child to the head of the list (NOT a full sort)
 */
-void sort_children(state** node, int player){
+void sort_children(state** node, bool color){
 
 	state* current = *node;
 	while (current != NULL) {
-		current->val = heuristics(current->board, player);
+		current->val = heuristics(current->board, color);
 		current = current->next;
 	}
 
@@ -547,24 +545,24 @@ void free_children(state* children) {
 * currentPlayer - color of player to move (only 0 [White] or 1 [Black])
 * alpha/beta - values used to prune
 */
-double minimax(state *node, state* bestState, int depth, int currentPlayer, double alpha, double beta) {
+double minimax(state *node, state* bestState, int depth, bool color, double alpha, double beta) {
 	
 	//return when depth limit reached, or is actual leaf node
 	if (depth == 0 || game_over(node->board)) {
-		return heuristics(node->board, currentPlayer);
+		return heuristics(node->board, color);
 	}
 
 	state gb = state(); //throwaway state
 	state* children = new_state();
 
-	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
+	generate_children(children, node->board, generate_moves(node->board, color), color);
 
-	sort_children(&children, currentPlayer);
+	sort_children(&children, color);
 	state* current = children;
 
 	while (current != NULL) {
 		//recurse on child
-		double result = -minimax(current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
+		double result = -minimax(current, &gb, depth-1, abs(color-1), -beta, -alpha);
 
 		if (result >= beta) { //prune
 			free_children(children);
@@ -590,7 +588,7 @@ double minimax(state *node, state* bestState, int depth, int currentPlayer, doub
 * Initial call to minimax. Gets best move,
 * makes it, and updates board.
 */
-void make_move(){
+void make_move(bool color){
 
 	frameClock = clock();
 	clock_t beginClock = clock(), deltaClock;
@@ -669,6 +667,7 @@ int main(int argc, char **argv){
 	char inbuf[256];
 	char playerstring;
 	int x,y,c;
+	bool color;
 	struct timeval start, finish;
 
 	turn = 0;
@@ -684,7 +683,7 @@ int main(int argc, char **argv){
 		gameState[WHITE] = strtoll(optarg, NULL, 16);
 		break;
 	case 'v':
-		verbose = TRUE;
+		verbose = true;
 		break;
 	default:
 		exit(1);
@@ -718,7 +717,7 @@ int main(int argc, char **argv){
 
 	if (color == BLACK) {
 		gettimeofday(&start, 0);
-		make_move();
+		make_move(color);
 		gettimeofday(&finish, 0);
 		if(verbose)
 			fprintf(stdout, "Time: %f seconds, ", (finish.tv_sec - start.tv_sec)
@@ -731,11 +730,11 @@ int main(int argc, char **argv){
 				fprintf(stderr, "Invalid Input\n");
 				return 0;
 			}
-			unsigned long long* temp = update(gameState, get_move(x,y),abs(color-1), x, y);
+			unsigned long long* temp = update(gameState, get_move(x,y),!color, x, y);
 			gameState[WHITE] = temp[WHITE];
 			gameState[BLACK] = temp[BLACK];
 		}
-		make_move();
+		make_move(color);
 	}
 	return 0;
 }
