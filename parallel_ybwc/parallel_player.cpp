@@ -67,24 +67,6 @@ unsigned int bit_count(unsigned long long board){
 }
 
 /*
- * Helper function create a new state struct
- */
-state* new_state() {
-	state* s = new state;
-	s->next = NULL;
-
-	// Zero out the board
-	s->board = (unsigned long long *)malloc(sizeof(unsigned long long)*2);
-	s->board[WHITE] = 0;
-	s->board[BLACK] = 0;
-
-	s->x = -1;
-	s->y = -1;
-	s->val = 0;
-	return s;
-}
-
-/*
  * Initializes the board for a new game
  */
 void new_game(){
@@ -420,9 +402,9 @@ unsigned long long flip(unsigned long long w, unsigned long long b, unsigned lon
 
 /*
  * Generate a child given current board, next move, color to move, col of move, and row of move
+ * Stores result in newBoard
  */
-unsigned long long* generate_child(unsigned long long board[2][4], unsigned long long move, int color, int x, int y){
-	unsigned long long* newBoard = (unsigned long long*) malloc(sizeof(unsigned long long)*2);
+void generate_child(unsigned long long* newBoard, unsigned long long board[2][4], unsigned long long move, int color, int x, int y){
 
 	unsigned long long flipped =
 			flip(board[color][R0]&maskTable[x][y][R0], board[abs(color-1)][R0]&maskTable[x][y][R0],move)
@@ -432,18 +414,18 @@ unsigned long long* generate_child(unsigned long long board[2][4], unsigned long
 
 	newBoard[color] = flipped|move|board[color][0]; //add flipped pieces and this move to players old board
 	newBoard[abs(color-1)] = board[abs(color-1)][0]&~flipped; //remove flipped pieces from opponents old board
-	return newBoard;
 }
 
 /*
  * Update board given current board, next move, and color to move
+ * Stores result in newBoard
  */
-unsigned long long* update(unsigned long long currBoard[2], unsigned long long move, int color, int x, int y){
+void update(unsigned long long* newBoard, unsigned long long currBoard[2], unsigned long long move, int color, int x, int y){
 	unsigned long long board[2][4];
 	board[WHITE][R0] = currBoard[WHITE];
 	board[BLACK][R0] = currBoard[BLACK];
 	compute_rotations(board);
-	return generate_child(board, move, color, x, y);
+	generate_child(newBoard, board, move, color, x, y);
 }
 
 /*
@@ -451,7 +433,6 @@ unsigned long long* update(unsigned long long currBoard[2], unsigned long long m
  */
 void generate_children(state* head, unsigned long long currBoard[2], unsigned long long moves, int color){
 
-	state* previous = head;
 	unsigned long long board[2][4];
 	board[WHITE][R0] = currBoard[WHITE];
 	board[BLACK][R0] = currBoard[BLACK];
@@ -460,18 +441,21 @@ void generate_children(state* head, unsigned long long currBoard[2], unsigned lo
 	while(moves){
 		unsigned long long currMove = moves&(~moves+1);
 		int temp = get_shift(currMove);
-		previous->x = 7-(temp%8);
-		previous->y = 7-(temp/8);
-		previous->board = generate_child(board, currMove, color, previous->x, previous->y);
+		head->x = 7-(temp%8);
+		head->y = 7-(temp/8);
+		generate_child(head->board, board, currMove, color, head->x, head->y);
 		moves&=moves-1;
 
-		state* currentState = new_state();
-		previous->next = currentState;
+		state* currentState = new state();
+
+		head->next = currentState;
 		if(moves)
-			previous = currentState;
+			head = currentState;
+		else
+			delete currentState;
 		totalStates++;
 	}
-	previous->next = NULL;
+	head->next = NULL;
 }
 
 /***********************START special functions***********************/
@@ -531,19 +515,6 @@ void sort_children(state** node, int player){
 }
 
 /*
-* Free singly-linked list of states
-*/
-void free_list(state* list) {
-	state* node = list;
-	while (node != NULL) {
-		state* temp = node;
-		node = node->next;
-		free(temp);
-		temp = NULL;
-	}
-}
-
-/*
 * Serial Alpha-Beta negamax
 * called once SERIAL_DEPTH is reached to finish execution serially
 * node - the initial board state
@@ -558,7 +529,7 @@ double minimax_serial(state* node, int depth, int currentPlayer, double alpha, d
 		return heuristics(node->board, currentPlayer);
 	}
 
-	state* children = new_state();
+	state* children = new state();
 
 	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
 
@@ -570,7 +541,7 @@ double minimax_serial(state* node, int depth, int currentPlayer, double alpha, d
 		double result = -minimax_serial(current, depth-1, abs(currentPlayer-1), -beta, -alpha);
 
 		if (result >= beta) { //prune
-			free_list(children);
+			delete children;
 			return beta;
 		}
 		if (result > alpha) {
@@ -581,7 +552,7 @@ double minimax_serial(state* node, int depth, int currentPlayer, double alpha, d
 		current = current->next;
 	}
 
-	free_list(children);
+	delete children;
 	return alpha;
 }
 
@@ -602,7 +573,7 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 	}
 
 	state gb = state(); //throwaway state
-	state* children = new_state();
+	state* children = new state();
 
 	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
 
@@ -613,12 +584,13 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 	double result = -minimax(thread_id, current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
 
 	if (result >= beta) { //prune
-		free_list(children);
+		delete children;
 		return beta;
 	}
 	if (result > alpha)	{
 		alpha = result;
-		bestState->board = current->board;
+		bestState->board[BLACK] = current->board[BLACK];
+		bestState->board[WHITE] = current->board[WHITE];
 		bestState->x = current->x;
 		bestState->y = current->y;
 	}
@@ -654,7 +626,8 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 			double val = -results[i].get(); //Will block here until fulfilled
 			if(val > result){ //if better child found
 				result = val;
-				bestState->board = current->board;
+				bestState->board[BLACK] = current->board[BLACK];
+				bestState->board[WHITE] = current->board[WHITE];
 				bestState->x = current->x;
 				bestState->y = current->y;
 			}
@@ -662,7 +635,7 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 		}
 
 		if (result >= beta) { //prune
-			free_list(children);
+			delete children;
 			return beta;
 		}
 		if (result > alpha)	{
@@ -670,7 +643,7 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 		}
 	}
 
-	free_list(children);
+	delete children;
 	return alpha;
 }
 
@@ -684,10 +657,11 @@ void make_move(){
 	frameClock = clock();
 	clock_t beginClock = clock(), deltaClock;
 
-	state* initialState = new_state();
-	initialState->board = gameState;
+	state* initialState = new state();
+	initialState->board[BLACK] = gameState[BLACK];
+	initialState->board[WHITE] = gameState[WHITE];
 
-	state* bestState = new_state();
+	state* bestState = new state();
 
 	/***IGNORE***/
 	/* Timelimit2 is set - overall game time */
@@ -747,6 +721,8 @@ void make_move(){
 
 		gameState[WHITE] = bestState->board[WHITE];
 		gameState[BLACK] = bestState->board[BLACK];
+		delete bestState;
+		delete initialState;
 	}
 }
 
@@ -824,9 +800,7 @@ int main(int argc, char **argv){
 				fprintf(stderr, "Invalid Input\n");
 				return 0;
 			}
-			unsigned long long* temp = update(gameState, get_move(x,y),abs(color-1), x, y);
-			gameState[WHITE] = temp[WHITE];
-			gameState[BLACK] = temp[BLACK];
+			update(gameState, gameState, get_move(x,y),abs(color-1), x, y);
 		}
 		make_move();
 	}
