@@ -16,6 +16,7 @@
 #define WHITE false
 #define BLACK true
 #define R0 0 //0 rotation
+#define L90 0 //90 degrees left rotation (only used to correct R90)
 #define R90 1 //90 degrees right rotation
 #define R45 2 //45 degrees right rotation
 #define L45 3 //45 degrees left rotation
@@ -31,8 +32,9 @@ int turn;
 int totalStates = 0;
 int times[] = {10,10,10,10,10,20,50,100,1000,10000,80000, 200000, 2000000, 2000000};
 
-unsigned char mask[8] = {0xffu,0xfeu,0xfcu,0xf8u,0xf0u,0xe0u,0xc0u,0x80u}; //mask out, respectively, no bit, far right bit, far right 2 bits, etc.
+const unsigned char mask[8] = {0xffu,0xfeu,0xfcu,0xf8u,0xf0u,0xe0u,0xc0u,0x80u}; //mask out, respectively, no bit, far right bit, far right 2 bits, etc.
 unsigned char moveTable[256][256]; //stores all moves (by row) based on [white row config][black row config] with white to move
+unsigned long long rotateTable[256][4]; //stores all moves (by row) based on [white row config][black row config] with white to move
 unsigned long long maskTable[8][8][4]; //stores all shift masks for any given move location
 unsigned long long gameState[2];
 
@@ -116,7 +118,7 @@ unsigned char compute_moves(unsigned char w, unsigned char b){
 	unsigned char lmoves = 0;
 	unsigned char t = moves & b<<1;
 	unsigned char t1 = 0;
-	for(unsigned char i = 1; i<8; i++){ //look right
+	for(int i = 1; i<8; i++){ //look right
 		t >>= 1;
 		t1 = t&b;
 		if(t ^ t1)
@@ -124,7 +126,7 @@ unsigned char compute_moves(unsigned char w, unsigned char b){
 		t = t1;
 	}
 	t = moves & b>>1;
-	for(unsigned char i = 1; i<8; i++){ //look left
+	for(int i = 1; i<8; i++){ //look left
 		t <<= 1;
 		t1 = t&b;
 		if(t ^ t1)
@@ -137,11 +139,11 @@ unsigned char compute_moves(unsigned char w, unsigned char b){
 /*
  * Fill moveTable (pre-computation)
  */
-void compute_all_moves(unsigned char moves[256][256]){
+void compute_all_moves(){
 	for (int i = 0; i < 256; i++) {
 		for (int j = 0; j < 256; j++) {
 			//Compute all legal moves given i and j
-			moves[i][j] = compute_moves(i,j);
+			moveTable[i][j] = compute_moves(i,j);
 		}
 	}
 }
@@ -149,7 +151,7 @@ void compute_all_moves(unsigned char moves[256][256]){
 /*
  * Calculate all masks for child generation (pre-computation)
  */
-void calculate_masks(unsigned long long shiftMasks[8][8][4]){
+void calculate_masks(){
 	for(int i = 0; i<8; i++){
 		for(int j = 0; j<8; j++){
 			int dif = j-i<0?j-i+8:j-i;
@@ -157,18 +159,19 @@ void calculate_masks(unsigned long long shiftMasks[8][8][4]){
 			int sign = j-i<0?0:1; //diagonal partial mask
 			int off = j+i>7?0:1; //diagonal partial mask
 
-			shiftMasks[i][j][R0] = (unsigned long long)0xffu<<((7-j)*8); //R0 mask
-			shiftMasks[i][j][R90] = (unsigned long long)0xffu<<((7-i)*8); //R90 mask
+			maskTable[i][j][R0] = (unsigned long long)0xffu<<((7-j)*8); //R0 mask
+			maskTable[i][j][R90] = (unsigned long long)0xffu<<((7-i)*8); //R90 mask
 			if(sign)
-				shiftMasks[i][j][R45] = (unsigned long long)mask[dif]<<((7-dif)*8); //R45 mask
+				maskTable[i][j][R45] = (unsigned long long)mask[dif]<<((7-dif)*8); //R45 mask
 			else
-				shiftMasks[i][j][R45] = (unsigned long long)(~mask[dif]&0xffu)<<((7-dif)*8); //R45 mask other part diagonal
+				maskTable[i][j][R45] = (unsigned long long)(~mask[dif]&0xffu)<<((7-dif)*8); //R45 mask other part diagonal
 			if(off)
-				shiftMasks[i][j][L45] = (unsigned long long)mask[7-sum]<<((7-sum)*8); //L45 mask
+				maskTable[i][j][L45] = (unsigned long long)mask[7-sum]<<((7-sum)*8); //L45 mask
 			else
-				shiftMasks[i][j][L45] = (unsigned long long)(~mask[7-sum]&0xffu)<<((7-sum)*8); //L45 mask other part diagonal
+				maskTable[i][j][L45] = (unsigned long long)(~mask[7-sum]&0xffu)<<((7-sum)*8); //L45 mask other part diagonal
 		}
 	}
+
 }
 
 /*
@@ -177,8 +180,8 @@ void calculate_masks(unsigned long long shiftMasks[8][8][4]){
 unsigned long long r90(unsigned long long board){
 	unsigned long long rBoard = 0;
 	unsigned long long w = 0x1u; //needed to make b be 64 bits
-	for (unsigned char i = 0; i < 8; i++) {
-		for (unsigned char j = 0; j < 8; j++) {
+	for (int i = 0; i < 8; i++) {
+		for (int j = 0; j < 8; j++) {
 			int x = 63-(j*8+i); //convert i,j to 1D
 			unsigned long long b = (board & (w<<x)) != 0; //get bit at i,j
 			int y = 63-(7-j+i*8); //convert 7-j, i to 1D
@@ -195,8 +198,8 @@ unsigned long long l90(unsigned long long board){
 	unsigned long long rBoard = 0;
 	unsigned long long w = 0x1u; //needed to make b be 64 bits
 
-	for (unsigned char i = 0; i < 8; i++) {
-		for (unsigned char j = 0; j < 8; j++) {
+	for (int i = 0; i < 8; i++) {
+		for (int j = 0; j < 8; j++) {
 			int x = 63-(j*8+i); //convert i,j to 1D
 			unsigned long long b = (board & (w<<x)) != 0; //get bit at i,j
 			int y = 63-((7-i)*8+j); //convert j, 7-i to 1D
@@ -213,8 +216,8 @@ unsigned long long r45(unsigned long long board){
 	unsigned long long rBoard = 0;
 	unsigned long long w = 0x1u; //needed to make b be 64 bits
 
-	for (unsigned char i = 0; i < 8; i++) {
-		for (unsigned char j = 0; j < 8; j++) {
+	for (int i = 0; i < 8; i++) {
+		for (int j = 0; j < 8; j++) {
 			int x = 63-(j*8+i); //convert i,j to 1D
 			unsigned long long b = (board & (w<<x)) != 0; //get bit at i,j
 			int z = j-i;
@@ -234,8 +237,8 @@ unsigned long long l45(unsigned long long board){
 	unsigned long long rBoard = 0;
 	unsigned long long w = 0x1u; //needed to make b be 64 bits
 
-	for (unsigned char i = 0; i < 8; i++) {
-		for (unsigned char j = 0; j < 8; j++) {
+	for (int i = 0; i < 8; i++) {
+		for (int j = 0; j < 8; j++) {
 			int x = 63-(j*8+i); //convert i,j to 1D
 			unsigned long long b = (board & (w<<x)) != 0; //get bit at i,j
 			int z = j+i;
@@ -249,17 +252,56 @@ unsigned long long l45(unsigned long long board){
 }
 
 /*
+ * Fill rotateTable (pre-computation)
+ */
+void calculate_rotations(){
+	for (int i = 0; i < 256; i++) {
+		//Compute all rotations given row i
+		rotateTable[i][L90] = l90(i);
+		rotateTable[i][R90] = r90(i);
+		rotateTable[i][R45] = r45(i);
+		rotateTable[i][L45] = l45(i);
+	}
+
+}
+
+/*
+ * Rotate board by r
+ * 0->left 90; 1->right 90; 2->right 45; 3->left 45
+ */
+unsigned long long rotate(unsigned long long board, int r){
+	unsigned long long new_board = 0;
+	switch(r){
+	case L90:
+		for(int i = 0; i < 8; i++)
+			new_board |= rotateTable[(board>>(i*8))&mask[0]][r]<<i;
+		break;
+	case R90:
+		for(int i = 0; i < 8; i++)
+			new_board |= rotateTable[(board>>(i*8))&mask[0]][r]>>i;
+		break;
+	case L45:
+	case R45:
+		for(int i = 0; i < 64; i+=8) //i increases by 8 each iteration
+			new_board |= (rotateTable[(board>>i)&mask[0]][r]<<i)|(rotateTable[(board>>i)&mask[0]][r]>>(64-i));
+		break;
+	}
+	return new_board;
+}
+
+/*
  * Computes all other rotations based on boards in board[WHITE][R0] and board[BLACK][R0]
  * and then stores them
  */
 void compute_rotations(unsigned long long board[2][4]){
-	board[WHITE][R90] = r90(board[WHITE][R0]);
-	board[WHITE][R45] = r45(board[WHITE][R0]);
-	board[WHITE][L45] = l45(board[WHITE][R0]);
 
-	board[BLACK][R90] = r90(board[BLACK][R0]);
-	board[BLACK][R45] = r45(board[BLACK][R0]);
-	board[BLACK][L45] = l45(board[BLACK][R0]);
+	board[WHITE][R90] = rotate(board[WHITE][R0], R90);
+	board[WHITE][R45] = rotate(board[WHITE][R0], R45);
+	board[WHITE][L45] = rotate(board[WHITE][R0], L45);
+
+	board[BLACK][R90] = rotate(board[BLACK][R0], R90);
+	board[BLACK][R45] = rotate(board[BLACK][R0], R45);
+	board[BLACK][L45] = rotate(board[BLACK][R0], L45);
 }
 
 /*
@@ -282,7 +324,7 @@ unsigned long long _generate_moves(unsigned long long board[2][4], bool color){
 	unsigned long long boardR45 = 0;
 	unsigned long long boardL45 = 0;
 
-	for(unsigned char i = 0; i<8; i++){ //must cast to long long because fuck C (all untyped numbers are int by default)
+	for(int i = 0; i<8; i++){ //must cast to long long because all untyped numbers are int by default
 		boardR0 |= (long long) moves((board[WHITE][R0]>>(8*(7-i)))&mask[0], (board[BLACK][R0]>>(8*(7-i)))&mask[0], color) << (8*(7-i));
 		boardR90 |= (long long) moves((board[WHITE][R90]>>(8*(7-i)))&mask[0],(board[BLACK][R90]>>(8*(7-i)))&mask[0], color) << (8*(7-i));
 		boardR45 |= ((long long) moves((board[WHITE][R45]>>(8*(7-i)))&mask[i], (board[BLACK][R45]>>(8*(7-i)))&mask[i], color) & mask[i]) << (8*(7-i));
@@ -290,7 +332,7 @@ unsigned long long _generate_moves(unsigned long long board[2][4], bool color){
 		boardR45 |= ((long long) moves((board[WHITE][R45]>>(8*(7-i)))&(~mask[i]&mask[0]), (board[BLACK][R45]>>(8*(7-i)))&(~mask[i]&mask[0]), color) & (~mask[i]&mask[0])) << (8*(7-i));
 		boardL45 |= ((long long) moves((board[WHITE][L45]>>(8*(7-i)))&(~mask[7-i]&mask[0]), (board[BLACK][L45]>>(8*(7-i)))&(~mask[7-i]&mask[0]), color) & (~mask[7-i]&mask[0])) << (8*(7-i));
 	}
-	return boardR0|l90(boardR90)|l45(boardR45)|r45(boardL45);
+	return boardR0|rotate(boardR90,L90)|rotate(boardR45,L45)|rotate(boardL45,R45);
 
 }
 
@@ -371,7 +413,7 @@ unsigned long long flip(unsigned long long w, unsigned long long b, unsigned lon
 
 	if((move>>1&b)||(move<<1&b)){
 		//RIGHT
-		for(unsigned char i = 0; i<8; i++){ //look right
+		for(int i = 0; i<8; i++){ //look right
 			t>>=1;
 			t&=b;
 			if(!t){
@@ -381,7 +423,7 @@ unsigned long long flip(unsigned long long w, unsigned long long b, unsigned lon
 		}
 		t = move;
 		if(flip)
-			for(unsigned char i = 0; i<8; i++){ //flip right
+			for(int i = 0; i<8; i++){ //flip right
 				t>>=1;
 				t&=b;
 				flipped |= t;
@@ -391,7 +433,7 @@ unsigned long long flip(unsigned long long w, unsigned long long b, unsigned lon
 		//LEFT
 		t = move;
 		flip = 0;
-		for(unsigned char i = 0; i<8; i++){ //look left
+		for(int i = 0; i<8; i++){ //look left
 				t<<=1;
 				t&=b;
 				if(!t){
@@ -401,7 +443,7 @@ unsigned long long flip(unsigned long long w, unsigned long long b, unsigned lon
 			}
 		t = move;
 		if(flip)
-			for(unsigned char i = 0; i<8; i++){ //flip left
+			for(int i = 0; i<8; i++){ //flip left
 				t<<=1;
 				t&=b;
 				flipped |= t;
@@ -419,10 +461,10 @@ unsigned long long* generate_child(unsigned long long board[2][4], unsigned long
 	unsigned long long* newBoard = (unsigned long long*) malloc(sizeof(unsigned long long)*2);
 
 	unsigned long long flipped =
-			flip(board[color][R0]&maskTable[x][y][R0], board[!color][R0]&maskTable[x][y][R0],move)
-			|l90(flip(board[color][R90]&maskTable[x][y][R90], board[!color][R90]&maskTable[x][y][R90],r90(move)))
-			|l45(flip(board[color][R45]&maskTable[x][y][R45], board[!color][R45]&maskTable[x][y][R45],r45(move)))
-			|r45(flip(board[color][L45]&maskTable[x][y][L45], board[!color][L45]&maskTable[x][y][L45],l45(move)));
+			flip(board[color][R0]&maskTable[x][y][R0], board[!color][R0]&maskTable[x][y][R0], move)
+			|rotate(flip(board[color][R90]&maskTable[x][y][R90], board[!color][R90]&maskTable[x][y][R90], rotate(move,R90)),L90)
+			|rotate(flip(board[color][R45]&maskTable[x][y][R45], board[!color][R45]&maskTable[x][y][R45], rotate(move,R45)),L45)
+			|rotate(flip(board[color][L45]&maskTable[x][y][L45], board[!color][L45]&maskTable[x][y][L45], rotate(move,L45)),R45);
 
 	newBoard[color] = flipped|move|board[color][0]; //add flipped pieces and this move to players old board
 	newBoard[!color] = board[!color][0]&~flipped; //remove flipped pieces from opponents old board
@@ -698,7 +740,7 @@ int main(int argc, char **argv){
 		   "    -limits: only specify a single limit and enter 0 for the others");
 	}
 	if (timelimit1 > 0) {
-		for (unsigned char i = 0; i < 14; i++) {
+		for (int i = 0; i < 14; i++) {
 			if (times[i] > timelimit1) {
 				guessedDepth = i - 2;
 				break;
@@ -712,8 +754,9 @@ int main(int argc, char **argv){
 	}
 
 	gameClock = clock();
-	compute_all_moves(moveTable);
-	calculate_masks(maskTable);
+	compute_all_moves();
+	calculate_rotations();
+	calculate_masks();
 
 	if (color == BLACK) {
 		gettimeofday(&start, 0);
