@@ -2,11 +2,21 @@
 #define STRUCTS_H_
 
 struct state{
-    unsigned long long* board;
-    int x;
-    int y;
-    double val;
-    struct state* next;
+	unsigned long long* board;
+	int x;
+	int y;
+	double val;
+	struct state* next;
+	state() : board(NULL), x(-1), y(-1), val(0), next(NULL) {
+		board = (unsigned long long*) malloc(sizeof(unsigned long long)*2);
+		board[0] = 0; //WHITE
+		board[1] = 0; //BLACK
+	}
+	~state(){
+		free(board);
+		if(next)
+			delete next;
+	}
 };
 
 #endif
