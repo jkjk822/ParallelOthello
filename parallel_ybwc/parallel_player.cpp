@@ -12,35 +12,35 @@
 #include <sys/time.h>
 #include <string>
 #include <iostream>
-#include "ctpl.h" //https://github.com/vit-vit/CTPL/
 #include "structs.h"
-#define WHITE 0
-#define BLACK 1
-#define FALSE 0
-#define TRUE 1
+#include "ctpl.h" //https://github.com/vit-vit/CTPL/
+
+//Constants
+#define WHITE false
+#define BLACK true
 #define R0 0 //0 rotation
+#define L90 0 //90 degrees left rotation (only used to correct R90)
 #define R90 1 //90 degrees right rotation
 #define R45 2 //45 degrees right rotation
 #define L45 3 //45 degrees left rotation
-
 
 using namespace std;
 
 clock_t gameClock;
 clock_t frameClock;
-int color;
 int guessedDepth = 0;
 int depthlimit, timelimit1, timelimit2;
 int turn;
 int totalStates = 0;
 int times[] = {10,10,10,10,10,20,50,100,1000,10000,80000, 200000, 2000000, 2000000};
 
-unsigned char mask[8] = {0xffu,0xfeu,0xfcu,0xf8u,0xf0u,0xe0u,0xc0u,0x80u}; //mask out, respectively, no bit, far right bit, far right 2 bits, etc.
-unsigned char moveTable[256][256][2]; //stores all moves (by row) based on [white row config][black row config][color to move]
+const unsigned char mask[8] = {0xffu,0xfeu,0xfcu,0xf8u,0xf0u,0xe0u,0xc0u,0x80u}; //mask out, respectively, no bit, far right bit, far right 2 bits, etc.
+unsigned char moveTable[256][256]; //stores all moves (by row) based on [white row config][black row config] with white to move
+unsigned long long rotateTable[256][4]; //stores all moves (by row) based on [white row config][black row config] with white to move
 unsigned long long maskTable[8][8][4]; //stores all shift masks for any given move location
 unsigned long long gameState[2];
 
-int verbose = FALSE; //Print timings for testing
+int verbose = false; //Print timings for testing
 
 ctpl::thread_pool pool(8);
 #define SERIAL_DEPTH 1 //Depth at which minimax becomes totally serial
@@ -91,9 +91,10 @@ unsigned get_shift(unsigned long long move){
 }
 
 /*
- * Compute white moves (for moveTable) based on row config w(hite) and b(lack)
+ * Compute moves (for moveTable) based on row config w(hite) and b(lack)
+ * with white to move
  */
-unsigned char compute_white_moves(unsigned char w, unsigned char b){
+unsigned char compute_moves(unsigned char w, unsigned char b){
 	if(!(w^b)) //no pieces in this area or pieces occupy the same space
 		return 0;
 
@@ -103,7 +104,7 @@ unsigned char compute_white_moves(unsigned char w, unsigned char b){
 	unsigned char lmoves = 0;
 	unsigned char t = moves & b<<1;
 	unsigned char t1 = 0;
-	for(unsigned char i = 1; i<8; i++){ //look right
+	for(int i = 1; i<8; i++){ //look right
 		t >>= 1;
 		t1 = t&b;
 		if(t ^ t1)
@@ -111,7 +112,7 @@ unsigned char compute_white_moves(unsigned char w, unsigned char b){
 		t = t1;
 	}
 	t = moves & b>>1;
-	for(unsigned char i = 1; i<8; i++){ //look left
+	for(int i = 1; i<8; i++){ //look left
 		t <<= 1;
 		t1 = t&b;
 		if(t ^ t1)
@@ -122,24 +123,13 @@ unsigned char compute_white_moves(unsigned char w, unsigned char b){
 }
 
 /*
- * Compute black moves (for moveTable) based on row config i(white) and j(black)
- * (done by pretending colors are reversed and finding white moves)
- */
-unsigned char compute_black_moves(unsigned char i, unsigned char j){
-	return compute_white_moves(j, i);
-}
-
-/*
  * Fill moveTable (pre-computation)
  */
-void compute_all_moves(unsigned char moves[256][256][2]){
+void compute_all_moves(){
 	for (int i = 0; i < 256; i++) {
 		for (int j = 0; j < 256; j++) {
-			//Compute all legal white moves given i and j
-			moves[i][j][WHITE] = compute_white_moves(i,j);
-
-			//Compute all legal black moves given i and j
-			moves[i][j][BLACK] = compute_black_moves(i,j);
+			//Compute all legal moves given i and j
+			moveTable[i][j] = compute_moves(i,j);
 		}
 	}
 }
@@ -147,7 +137,7 @@ void compute_all_moves(unsigned char moves[256][256][2]){
 /*
  * Calculate all masks for child generation (pre-computation)
  */
-void calculate_masks(unsigned long long shiftMasks[8][8][4]){
+void calculate_masks(){
 	for(int i = 0; i<8; i++){
 		for(int j = 0; j<8; j++){
 			int dif = j-i<0?j-i+8:j-i;
@@ -155,18 +145,19 @@ void calculate_masks(unsigned long long shiftMasks[8][8][4]){
 			int sign = j-i<0?0:1; //diagonal partial mask
 			int off = j+i>7?0:1; //diagonal partial mask
 
-			shiftMasks[i][j][R0] = (unsigned long long)0xffu<<((7-j)*8); //R0 mask
-			shiftMasks[i][j][R90] = (unsigned long long)0xffu<<((7-i)*8); //R90 mask
+			maskTable[i][j][R0] = (unsigned long long)0xffu<<((7-j)*8); //R0 mask
+			maskTable[i][j][R90] = (unsigned long long)0xffu<<((7-i)*8); //R90 mask
 			if(sign)
-				shiftMasks[i][j][R45] = (unsigned long long)mask[dif]<<((7-dif)*8); //R45 mask
+				maskTable[i][j][R45] = (unsigned long long)mask[dif]<<((7-dif)*8); //R45 mask
 			else
-				shiftMasks[i][j][R45] = (unsigned long long)(~mask[dif]&0xffu)<<((7-dif)*8); //R45 mask other part diagonal
+				maskTable[i][j][R45] = (unsigned long long)(~mask[dif]&0xffu)<<((7-dif)*8); //R45 mask other part diagonal
 			if(off)
-				shiftMasks[i][j][L45] = (unsigned long long)mask[7-sum]<<((7-sum)*8); //L45 mask
+				maskTable[i][j][L45] = (unsigned long long)mask[7-sum]<<((7-sum)*8); //L45 mask
 			else
-				shiftMasks[i][j][L45] = (unsigned long long)(~mask[7-sum]&0xffu)<<((7-sum)*8); //L45 mask other part diagonal
+				maskTable[i][j][L45] = (unsigned long long)(~mask[7-sum]&0xffu)<<((7-sum)*8); //L45 mask other part diagonal
 		}
 	}
+
 }
 
 /*
@@ -175,8 +166,8 @@ void calculate_masks(unsigned long long shiftMasks[8][8][4]){
 unsigned long long r90(unsigned long long board){
 	unsigned long long rBoard = 0;
 	unsigned long long w = 0x1u; //needed to make b be 64 bits
-	for (unsigned char i = 0; i < 8; i++) {
-		for (unsigned char j = 0; j < 8; j++) {
+	for (int i = 0; i < 8; i++) {
+		for (int j = 0; j < 8; j++) {
 			int x = 63-(j*8+i); //convert i,j to 1D
 			unsigned long long b = (board & (w<<x)) != 0; //get bit at i,j
 			int y = 63-(7-j+i*8); //convert 7-j, i to 1D
@@ -193,8 +184,8 @@ unsigned long long l90(unsigned long long board){
 	unsigned long long rBoard = 0;
 	unsigned long long w = 0x1u; //needed to make b be 64 bits
 
-	for (unsigned char i = 0; i < 8; i++) {
-		for (unsigned char j = 0; j < 8; j++) {
+	for (int i = 0; i < 8; i++) {
+		for (int j = 0; j < 8; j++) {
 			int x = 63-(j*8+i); //convert i,j to 1D
 			unsigned long long b = (board & (w<<x)) != 0; //get bit at i,j
 			int y = 63-((7-i)*8+j); //convert j, 7-i to 1D
@@ -211,8 +202,8 @@ unsigned long long r45(unsigned long long board){
 	unsigned long long rBoard = 0;
 	unsigned long long w = 0x1u; //needed to make b be 64 bits
 
-	for (unsigned char i = 0; i < 8; i++) {
-		for (unsigned char j = 0; j < 8; j++) {
+	for (int i = 0; i < 8; i++) {
+		for (int j = 0; j < 8; j++) {
 			int x = 63-(j*8+i); //convert i,j to 1D
 			unsigned long long b = (board & (w<<x)) != 0; //get bit at i,j
 			int z = j-i;
@@ -232,8 +223,8 @@ unsigned long long l45(unsigned long long board){
 	unsigned long long rBoard = 0;
 	unsigned long long w = 0x1u; //needed to make b be 64 bits
 
-	for (unsigned char i = 0; i < 8; i++) {
-		for (unsigned char j = 0; j < 8; j++) {
+	for (int i = 0; i < 8; i++) {
+		for (int j = 0; j < 8; j++) {
 			int x = 63-(j*8+i); //convert i,j to 1D
 			unsigned long long b = (board & (w<<x)) != 0; //get bit at i,j
 			int z = j+i;
@@ -247,45 +238,94 @@ unsigned long long l45(unsigned long long board){
 }
 
 /*
+ * Fill rotateTable (pre-computation)
+ */
+void calculate_rotations(){
+	for (int i = 0; i < 256; i++) {
+		//Compute all rotations given row i
+		rotateTable[i][L90] = l90(i);
+		rotateTable[i][R90] = r90(i);
+		rotateTable[i][R45] = r45(i);
+		rotateTable[i][L45] = l45(i);
+	}
+
+}
+
+/*
+ * Rotate board by r
+ * 0->left 90; 1->right 90; 2->right 45; 3->left 45
+ */
+unsigned long long rotate(unsigned long long board, int r){
+	unsigned long long new_board = 0;
+	switch(r){
+	case L90:
+		for(int i = 0; i < 8; i++)
+			new_board |= rotateTable[(board>>(i*8))&mask[0]][r]<<i;
+		break;
+	case R90:
+		for(int i = 0; i < 8; i++)
+			new_board |= rotateTable[(board>>(i*8))&mask[0]][r]>>i;
+		break;
+	case L45:
+	case R45:
+		for(int i = 0; i < 64; i+=8) //i increases by 8 each iteration
+			new_board |= (rotateTable[(board>>i)&mask[0]][r]<<i)|(rotateTable[(board>>i)&mask[0]][r]>>(64-i));
+		break;
+	}
+	return new_board;
+}
+
+/*
  * Computes all other rotations based on boards in board[WHITE][R0] and board[BLACK][R0]
  * and then stores them
  */
 void compute_rotations(unsigned long long board[2][4]){
-	board[WHITE][R90] = r90(board[WHITE][R0]);
-	board[WHITE][R45] = r45(board[WHITE][R0]);
-	board[WHITE][L45] = l45(board[WHITE][R0]);
 
-	board[BLACK][R90] = r90(board[BLACK][R0]);
-	board[BLACK][R45] = r45(board[BLACK][R0]);
-	board[BLACK][L45] = l45(board[BLACK][R0]);
+	board[WHITE][R90] = rotate(board[WHITE][R0], R90);
+	board[WHITE][R45] = rotate(board[WHITE][R0], R45);
+	board[WHITE][L45] = rotate(board[WHITE][R0], L45);
+
+	board[BLACK][R90] = rotate(board[BLACK][R0], R90);
+	board[BLACK][R45] = rotate(board[BLACK][R0], R45);
+	board[BLACK][L45] = rotate(board[BLACK][R0], L45);
+}
+
+/*
+ * Wrapper function for moveTable
+ */
+unsigned char moves(unsigned char w, unsigned char b, bool color){
+	if(color == WHITE)
+		return moveTable[w][b];
+	else //treat black as white
+		return moveTable[b][w]; 
 }
 
 /*
  * Generate moves using moveTable, current board, and color to move
  */
-unsigned long long _generate_moves(unsigned long long board[2][4], int color){
+unsigned long long _generate_moves(unsigned long long board[2][4], bool color){
 
 	unsigned long long boardR0 = 0;
 	unsigned long long boardR90 = 0;
 	unsigned long long boardR45 = 0;
 	unsigned long long boardL45 = 0;
 
-	for(unsigned char i = 0; i<8; i++){ //must cast to long long because fuck C (all untyped numbers are int by default)
-		boardR0 |= (long long)moveTable[(board[WHITE][R0]>>(8*(7-i)))&mask[0]][(board[BLACK][R0]>>(8*(7-i)))&mask[0]][color] << (8*(7-i));
-		boardR90 |= (long long)moveTable[(board[WHITE][R90]>>(8*(7-i)))&mask[0]][(board[BLACK][R90]>>(8*(7-i)))&mask[0]][color] << (8*(7-i));
-		boardR45 |= ((long long)moveTable[(board[WHITE][R45]>>(8*(7-i)))&mask[i]][(board[BLACK][R45]>>(8*(7-i)))&mask[i]][color]&mask[i]) << (8*(7-i));
-		boardL45 |= ((long long)moveTable[(board[WHITE][L45]>>(8*(7-i)))&mask[7-i]][(board[BLACK][L45]>>(8*(7-i)))&mask[7-i]][color]&mask[7-i]) << (8*(7-i));
-		boardR45 |= ((long long)moveTable[(board[WHITE][R45]>>(8*(7-i)))&(~mask[i]&mask[0])][(board[BLACK][R45]>>(8*(7-i)))&(~mask[i]&mask[0])][color]&(~mask[i]&mask[0])) << (8*(7-i));
-		boardL45 |= ((long long)moveTable[(board[WHITE][L45]>>(8*(7-i)))&(~mask[7-i]&mask[0])][(board[BLACK][L45]>>(8*(7-i)))&(~mask[7-i]&mask[0])][color]&(~mask[7-i]&mask[0])) << (8*(7-i));
+	for(int i = 0; i<8; i++){ //must cast to long long because all untyped numbers are int by default
+		boardR0 |= (long long) moves((board[WHITE][R0]>>(8*(7-i)))&mask[0], (board[BLACK][R0]>>(8*(7-i)))&mask[0], color) << (8*(7-i));
+		boardR90 |= (long long) moves((board[WHITE][R90]>>(8*(7-i)))&mask[0],(board[BLACK][R90]>>(8*(7-i)))&mask[0], color) << (8*(7-i));
+		boardR45 |= ((long long) moves((board[WHITE][R45]>>(8*(7-i)))&mask[i], (board[BLACK][R45]>>(8*(7-i)))&mask[i], color) & mask[i]) << (8*(7-i));
+		boardL45 |= ((long long) moves((board[WHITE][L45]>>(8*(7-i)))&mask[7-i], (board[BLACK][L45]>>(8*(7-i)))&mask[7-i], color) & mask[7-i]) << (8*(7-i));
+		boardR45 |= ((long long) moves((board[WHITE][R45]>>(8*(7-i)))&(~mask[i]&mask[0]), (board[BLACK][R45]>>(8*(7-i)))&(~mask[i]&mask[0]), color) & (~mask[i]&mask[0])) << (8*(7-i));
+		boardL45 |= ((long long) moves((board[WHITE][L45]>>(8*(7-i)))&(~mask[7-i]&mask[0]), (board[BLACK][L45]>>(8*(7-i)))&(~mask[7-i]&mask[0]), color) & (~mask[7-i]&mask[0])) << (8*(7-i));
 	}
-	return boardR0|l90(boardR90)|l45(boardR45)|r45(boardL45);
+	return boardR0|rotate(boardR90,L90)|rotate(boardR45,L45)|rotate(boardL45,R45);
 
 }
 
 /*
  * Generate moves using moveTable, current board, and color to move
  */
-unsigned long long generate_moves(unsigned long long currBoard[2], int color){
+unsigned long long generate_moves(unsigned long long currBoard[2], bool color){
 	unsigned long long board[2][4];
 	board[WHITE][R0] = currBoard[WHITE];
 	board[BLACK][R0] = currBoard[BLACK];
@@ -297,7 +337,7 @@ unsigned long long generate_moves(unsigned long long currBoard[2], int color){
 /*
  * Calculate value of a board position
  */
-double heuristics(unsigned long long board[2], int color){
+double heuristics(unsigned long long board[2], bool color){
 	double corner = 801.724;
 	double closeCorner = 382.026;
 	double piece = 10;
@@ -305,7 +345,7 @@ double heuristics(unsigned long long board[2], int color){
 
 	//Find piece diff
 	double playerPieces = bit_count(board[color]);
-	double opponentPieces = bit_count(board[abs(color-1)]);
+	double opponentPieces = bit_count(board[!color]);
 	double pieceDiff = 0;
 
 	pieceDiff = 100*(playerPieces-opponentPieces)/(playerPieces+opponentPieces);
@@ -317,7 +357,7 @@ double heuristics(unsigned long long board[2], int color){
 
 	compute_rotations(rBoard); //pre-compute rotations
 	double playerMobil = bit_count(_generate_moves(rBoard, color));
-	double opponentMobil = bit_count(_generate_moves(rBoard, abs(color-1)));
+	double opponentMobil = bit_count(_generate_moves(rBoard, !color));
 	double mobilDiff = 0;
 
 	if(playerMobil+opponentMobil != 0) {
@@ -328,7 +368,7 @@ double heuristics(unsigned long long board[2], int color){
 
 	//Find corner diff
 	double playerCorner = iter_count(board[color]&0x8100000000000081u);
-	double opponentCorner = iter_count(board[abs(color-1)]&0x8100000000000081u);
+	double opponentCorner = iter_count(board[!color]&0x8100000000000081u);
 	double cornerDiff = 0;
 
 	if ((playerCorner+opponentCorner) != 0) {
@@ -338,7 +378,7 @@ double heuristics(unsigned long long board[2], int color){
 	//Find close corner diff
 	//TODO: see if this calculation method is correct
 	double playerCloseCorner = bit_count(board[color]&0x42c300000000c342u);
-	double opponentCloseCorner = bit_count(board[abs(color-1)]&0x42c300000000c342u);
+	double opponentCloseCorner = bit_count(board[!color]&0x42c300000000c342u);
 	double closeCornerDiff = 0;
 
 	if ((playerCloseCorner+opponentCloseCorner) != 0) {
@@ -359,7 +399,7 @@ unsigned long long flip(unsigned long long w, unsigned long long b, unsigned lon
 
 	if((move>>1&b)||(move<<1&b)){
 		//RIGHT
-		for(unsigned char i = 0; i<8; i++){ //look right
+		for(int i = 0; i<8; i++){ //look right
 			t>>=1;
 			t&=b;
 			if(!t){
@@ -369,7 +409,7 @@ unsigned long long flip(unsigned long long w, unsigned long long b, unsigned lon
 		}
 		t = move;
 		if(flip)
-			for(unsigned char i = 0; i<8; i++){ //flip right
+			for(int i = 0; i<8; i++){ //flip right
 				t>>=1;
 				t&=b;
 				flipped |= t;
@@ -379,7 +419,7 @@ unsigned long long flip(unsigned long long w, unsigned long long b, unsigned lon
 		//LEFT
 		t = move;
 		flip = 0;
-		for(unsigned char i = 0; i<8; i++){ //look left
+		for(int i = 0; i<8; i++){ //look left
 				t<<=1;
 				t&=b;
 				if(!t){
@@ -389,7 +429,7 @@ unsigned long long flip(unsigned long long w, unsigned long long b, unsigned lon
 			}
 		t = move;
 		if(flip)
-			for(unsigned char i = 0; i<8; i++){ //flip left
+			for(int i = 0; i<8; i++){ //flip left
 				t<<=1;
 				t&=b;
 				flipped |= t;
@@ -404,23 +444,23 @@ unsigned long long flip(unsigned long long w, unsigned long long b, unsigned lon
  * Generate a child given current board, next move, color to move, col of move, and row of move
  * Stores result in newBoard
  */
-void generate_child(unsigned long long* newBoard, unsigned long long board[2][4], unsigned long long move, int color, int x, int y){
+void generate_child(unsigned long long* newBoard, unsigned long long board[2][4], unsigned long long move, bool color, int x, int y){
 
 	unsigned long long flipped =
-			flip(board[color][R0]&maskTable[x][y][R0], board[abs(color-1)][R0]&maskTable[x][y][R0],move)
-			|l90(flip(board[color][R90]&maskTable[x][y][R90], board[abs(color-1)][R90]&maskTable[x][y][R90],r90(move)))
-			|l45(flip(board[color][R45]&maskTable[x][y][R45], board[abs(color-1)][R45]&maskTable[x][y][R45],r45(move)))
-			|r45(flip(board[color][L45]&maskTable[x][y][L45], board[abs(color-1)][L45]&maskTable[x][y][L45],l45(move)));
+			flip(board[color][R0]&maskTable[x][y][R0], board[!color][R0]&maskTable[x][y][R0], move)
+			|rotate(flip(board[color][R90]&maskTable[x][y][R90], board[!color][R90]&maskTable[x][y][R90], rotate(move,R90)),L90)
+			|rotate(flip(board[color][R45]&maskTable[x][y][R45], board[!color][R45]&maskTable[x][y][R45], rotate(move,R45)),L45)
+			|rotate(flip(board[color][L45]&maskTable[x][y][L45], board[!color][L45]&maskTable[x][y][L45], rotate(move,L45)),R45);
 
 	newBoard[color] = flipped|move|board[color][0]; //add flipped pieces and this move to players old board
-	newBoard[abs(color-1)] = board[abs(color-1)][0]&~flipped; //remove flipped pieces from opponents old board
+	newBoard[!color] = board[!color][0]&~flipped; //remove flipped pieces from opponents old board
 }
 
 /*
  * Update board given current board, next move, and color to move
  * Stores result in newBoard
  */
-void update(unsigned long long* newBoard, unsigned long long currBoard[2], unsigned long long move, int color, int x, int y){
+void update(unsigned long long* newBoard, unsigned long long currBoard[2], unsigned long long move, bool color, int x, int y){
 	unsigned long long board[2][4];
 	board[WHITE][R0] = currBoard[WHITE];
 	board[BLACK][R0] = currBoard[BLACK];
@@ -431,7 +471,7 @@ void update(unsigned long long* newBoard, unsigned long long currBoard[2], unsig
 /*
  * Generate all children and store in linked list given by head, with current board, board of possible moves, and color to move
  */
-void generate_children(state* head, unsigned long long currBoard[2], unsigned long long moves, int color){
+void generate_children(state* head, unsigned long long currBoard[2], unsigned long long moves, bool color){
 
 	unsigned long long board[2][4];
 	board[WHITE][R0] = currBoard[WHITE];
@@ -477,11 +517,11 @@ int game_over(unsigned long long board[2]){
 /*
 * Gets the best child to the head of the list (NOT a full sort)
 */
-void sort_children(state** node, int player){
+void sort_children(state** node, bool color){
 
 	state* current = *node;
 	while (current != NULL) {
-		current->val = heuristics(current->board, player);
+		current->val = heuristics(current->board, color);
 		current = current->next;
 	}
 
@@ -519,26 +559,26 @@ void sort_children(state** node, int player){
 * called once SERIAL_DEPTH is reached to finish execution serially
 * node - the initial board state
 * depth - how much deeper this call should dive (e.g. starts high gets decremented)
-* currentPlayer - color of player to move (only 0 [White] or 1 [Black])
+* color - color of player to move (only 0 [White] or 1 [Black])
 * alpha/beta - values used to prune
 */
-double minimax_serial(state* node, int depth, int currentPlayer, double alpha, double beta) {
+double minimax_serial(state* node, int depth, bool color, double alpha, double beta) {
 
 	//return when depth limit reached, or is actual leaf node
 	if (depth == 0 || game_over(node->board)) {
-		return heuristics(node->board, currentPlayer);
+		return heuristics(node->board, color);
 	}
 
 	state* children = new state();
 
-	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
+	generate_children(children, node->board, generate_moves(node->board, color), color);
 
-	sort_children(&children, currentPlayer);
+	sort_children(&children, color);
 	state* current = children;
 
 	while (current != NULL) {
 		//recurse on child
-		double result = -minimax_serial(current, depth-1, abs(currentPlayer-1), -beta, -alpha);
+		double result = -minimax_serial(current, depth-1, !color, -beta, -alpha);
 
 		if (result >= beta) { //prune
 			delete children;
@@ -562,26 +602,26 @@ double minimax_serial(state* node, int depth, int currentPlayer, double alpha, d
 * node - the initial board state
 * bestState - stores best move (Only used at the top level)
 * depth - how much deeper this call should dive (e.g. starts high gets decremented)
-* currentPlayer - color of player to move (only 0 [White] or 1 [Black])
+* color - color of player to move (only 0 [White] or 1 [Black])
 * alpha/beta - values used to prune
 */
-double minimax(int thread_id, state* node, state* bestState, int depth, int currentPlayer,double alpha, double beta) {
+double minimax(int thread_id, state* node, state* bestState, int depth, bool color,double alpha, double beta) {
 	
 	//return when depth limit reached, or is actual leaf node
 	if (depth == 0 || game_over(node->board)) {
-		return heuristics(node->board, currentPlayer);
+		return heuristics(node->board, color);
 	}
 
 	state gb = state(); //throwaway state
 	state* children = new state();
 
-	generate_children(children, node->board, generate_moves(node->board, currentPlayer), currentPlayer);
+	generate_children(children, node->board, generate_moves(node->board, color), color);
 
-	sort_children(&children, currentPlayer);
+	sort_children(&children, color);
 	state* current = children;
 
 	//recurse on first child
-	double result = -minimax(thread_id, current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha);
+	double result = -minimax(thread_id, current, &gb, depth-1, !color, -beta, -alpha);
 
 	if (result >= beta) { //prune
 		delete children;
@@ -606,15 +646,15 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 			promise<double> fake; //Fake future
 			results.push_back(fake.get_future()); //Imitate pushing call
 			//Fulfill immediately
-			fake.set_value(minimax_serial(current, depth-1, abs(currentPlayer-1), -beta, -alpha));
+			fake.set_value(minimax_serial(current, depth-1, !color, -beta, -alpha));
 		}
 		else if(pool.n_idle() > 0) //Asynchronously do in pool if idle threads
-			results.push_back(pool.push(minimax, current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha));
+			results.push_back(pool.push(minimax, current, &gb, depth-1, !color, -beta, -alpha));
 		else{ //Else do yourself
 			promise<double> fake; //Fake future
 			results.push_back(fake.get_future()); //Imitate pushing call
 			//Fulfill immediately
-			fake.set_value(minimax(thread_id, current, &gb, depth-1, abs(currentPlayer-1), -beta, -alpha));
+			fake.set_value(minimax(thread_id, current, &gb, depth-1, !color, -beta, -alpha));
 		}
 		current = current->next;
 	}
@@ -652,7 +692,7 @@ double minimax(int thread_id, state* node, state* bestState, int depth, int curr
 * Initial call to minimax. Gets best move,
 * makes it, and updates board.
 */
-void make_move(){
+void make_move(bool color){
 
 	frameClock = clock();
 	clock_t beginClock = clock(), deltaClock;
@@ -734,6 +774,7 @@ int main(int argc, char **argv){
 	char inbuf[256];
 	char playerstring;
 	int x,y,c;
+	bool color;
 	struct timeval start, finish;
 
 	turn = 0;
@@ -753,7 +794,7 @@ int main(int argc, char **argv){
 		pool.resize(atoi(optarg));
 		break;
 	case 'v':
-		verbose = TRUE;
+		verbose = true;
 		break;
 	default:
 		exit(1);
@@ -768,7 +809,7 @@ int main(int argc, char **argv){
 		   "    -limits: only specify a single limit and enter 0 for the others");
 	}
 	if (timelimit1 > 0) {
-		for (unsigned char i = 0; i < 14; i++) {
+		for (int i = 0; i < 14; i++) {
 			if (times[i] > timelimit1) {
 				guessedDepth = i - 2;
 				break;
@@ -782,12 +823,13 @@ int main(int argc, char **argv){
 	}
 
 	gameClock = clock();
-	compute_all_moves(moveTable);
-	calculate_masks(maskTable);
+	compute_all_moves();
+	calculate_rotations();
+	calculate_masks();
 
 	if (color == BLACK) {
 		gettimeofday(&start, 0);
-		make_move();
+		make_move(color);
 		gettimeofday(&finish, 0);
 		if(verbose)
 			fprintf(stdout, "Time: %f seconds, ", (finish.tv_sec - start.tv_sec)
@@ -800,9 +842,9 @@ int main(int argc, char **argv){
 				fprintf(stderr, "Invalid Input\n");
 				return 0;
 			}
-			update(gameState, gameState, get_move(x,y),abs(color-1), x, y);
+			update(gameState, gameState, get_move(x,y),!color, x, y);
 		}
-		make_move();
+		make_move(color);
 	}
 	return 0;
 }
