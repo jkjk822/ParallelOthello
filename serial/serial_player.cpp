@@ -555,7 +555,7 @@ void sort_children(state** node, bool color){
 * node - the initial board state
 * bestState - stores best move (Only used at the top level)
 * depth - how much deeper this call should dive (e.g. starts high gets decremented)
-* color - color of player to move (only 0 [White] or 1 [Black])
+* color - color of player to move (false [White]; true [Black])
 * alpha/beta - values used to prune
 */
 double minimax(state *node, state* bestState, int depth, bool color, double alpha, double beta) {

@@ -559,7 +559,7 @@ void sort_children(state** node, bool color){
 * called once SERIAL_DEPTH is reached to finish execution serially
 * node - the initial board state
 * depth - how much deeper this call should dive (e.g. starts high gets decremented)
-* color - color of player to move (only 0 [White] or 1 [Black])
+* color - color of player to move (false [White]; true [Black])
 * alpha/beta - values used to prune
 */
 double minimax_serial(state* node, int depth, bool color, double alpha, double beta) {
@@ -602,7 +602,7 @@ double minimax_serial(state* node, int depth, bool color, double alpha, double b
 * node - the initial board state
 * bestState - stores best move (Only used at the top level)
 * depth - how much deeper this call should dive (e.g. starts high gets decremented)
-* color - color of player to move (only 0 [White] or 1 [Black])
+* color - color of player to move (false [White]; true [Black])
 * alpha/beta - values used to prune
 */
 double minimax(int thread_id, state* node, state* bestState, int depth, bool color,double alpha, double beta) {
@@ -658,6 +658,7 @@ double minimax(int thread_id, state* node, state* bestState, int depth, bool col
 		}
 		current = current->next;
 	}
+
 	if(!results.empty()){
 		current = children->next;
 
