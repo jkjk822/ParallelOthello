@@ -1,0 +1,370 @@
+Flat profile:
+
+Each sample counts as 0.01 seconds.
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls  ms/call  ms/call  name    
+ 38.51    133.12   133.12  2273115     0.06     0.06  _generate_moves(unsigned long long (*) [4], int)
+ 32.86    246.73   113.61  1052717     0.11     0.11  compute_rotations(unsigned long long (*) [4])
+ 21.19    319.99    73.26   747385     0.10     0.10  generate_child(unsigned long long (*) [4], unsigned long long, int, int, int)
+  3.60    332.43    12.43    33291     0.37    10.29  minimax(int, state*, state*, int, int, double, double)
+  1.67    338.20     5.77    70848     0.08     1.24  generate_children(state*, unsigned long long*, unsigned long long, int)
+  0.93    341.42     3.22   832222     0.00     0.24  heuristics(unsigned long long*, int)
+  0.59    343.46     2.04                             std::thread::_State_impl<std::_Bind_simple<ctpl::thread_pool::set_thread(int)::{lambda()#1} ()> >::_M_run()
+  0.29    344.45     0.99  4155667     0.00     0.00  flip(unsigned long long, unsigned long long, unsigned long long)
+  0.12    344.85     0.40    23715     0.02     0.02  std::_Sp_counted_ptr_inplace<std::packaged_task<double (int)>, std::allocator<std::packaged_task<double (int)> >, (__gnu_cxx::_Lock_policy)2>::_M_dispose()
+  0.09    345.17     0.32    26338     0.01     0.03  std::_Function_base::_Base_manager<std::future<decltype ({parm#1}(0, {parm#2}...))> ctpl::thread_pool::push<double (&)(int, state*, state*, int, int, double, double), state*&, state*, int, int, double, double>(double (&)(int, state*, state*, int, int, double, double), state*&, state*&&, int&&, int&&, double&&, double&&)::{lambda(int)#1}>::_M_manager(std::_Any_data&, std::_Function_base::_Base_manager<std::future<decltype ({parm#1}(0, {parm#2}...))> ctpl::thread_pool::push<double (&)(int, state*, state*, int, int, double, double), state*&, state*, int, int, double, double>(double (&)(int, state*, state*, int, int, double, double), state*&, state*&&, int&&, int&&, double&&, double&&)::{lambda(int)#1}> const&, std::_Manager_operation)
+  0.04    345.30     0.13    22938     0.01    14.94  std::_Function_handler<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> (), std::__future_base::_Task_setter<std::unique_ptr<std::__future_base::_Result<double>, std::__future_base::_Result_base::_Deleter>, std::_Bind_simple<std::reference_wrapper<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)> > (int)>, double> >::_M_invoke(std::_Any_data const&)
+  0.03    345.39     0.09                             std::__future_base::_State_baseV2::_M_do_set(std::function<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> ()>*, bool*)
+  0.02    345.47     0.09    29447     0.00     0.00  std::_Function_handler<void (int), std::future<decltype ({parm#1}(0, {parm#2}...))> ctpl::thread_pool::push<double (&)(int, state*, state*, int, int, double, double), state*&, state*, int, int, double, double>(double (&)(int, state*, state*, int, int, double, double), state*&, state*&&, int&&, int&&, double&&, double&&)::{lambda(int)#1}>::_M_invoke(std::_Any_data const&, int&&)
+  0.02    345.53     0.06   286322     0.00     0.00  std::__future_base::_Result<double>::_M_destroy()
+  0.01    345.58     0.05                             void std::call_once<void (std::__future_base::_State_baseV2::*)(std::function<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> ()>*, bool*), std::__future_base::_State_baseV2*, std::function<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> ()>*, bool*>(std::once_flag&, void (std::__future_base::_State_baseV2::*&&)(std::function<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> ()>*, bool*), std::__future_base::_State_baseV2*&&, std::function<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> ()>*&&, bool*&&)::{lambda()#2}::_FUN()
+  0.01    345.61     0.03   290556     0.00     0.00  std::_Sp_counted_ptr_inplace<std::__future_base::_State_baseV2, std::allocator<std::__future_base::_State_baseV2>, (__gnu_cxx::_Lock_policy)2>::_M_destroy()
+  0.01    345.63     0.02   255370     0.00     0.00  std::__future_base::_State_baseV2::~_State_baseV2()
+  0.01    345.65     0.02                             generate_moves(unsigned long long*, int)
+  0.00    345.67     0.02   274083     0.00     0.00  std::_Sp_counted_ptr_inplace<std::__future_base::_State_baseV2, std::allocator<std::__future_base::_State_baseV2>, (__gnu_cxx::_Lock_policy)2>::_M_dispose()
+  0.00    345.68     0.02   157950     0.00     0.00  std::_Sp_counted_ptr_inplace<std::__future_base::_State_baseV2, std::allocator<std::__future_base::_State_baseV2>, (__gnu_cxx::_Lock_policy)2>::_M_get_deleter(std::type_info const&)
+  0.00    345.70     0.02   109745     0.00     0.00  std::_Function_handler<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> (), std::__future_base::_State_baseV2::_Setter<double, double&&> >::_M_invoke(std::_Any_data const&)
+  0.00    345.71     0.01   138477     0.00     0.00  std::_Function_base::_Base_manager<std::__future_base::_State_baseV2::_Setter<double, double&&> >::_M_manager(std::_Any_data&, std::_Any_data const&, std::_Manager_operation)
+  0.00    345.72     0.01    33205     0.00     0.00  std::_Function_base::_Base_manager<std::__future_base::_Task_setter<std::unique_ptr<std::__future_base::_Result<double>, std::__future_base::_Result_base::_Deleter>, std::_Bind_simple<std::reference_wrapper<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)> > (int)>, double> >::_M_manager(std::_Any_data&, std::_Any_data const&, std::_Manager_operation)
+  0.00    345.73     0.01    32600     0.00     0.00  std::_Sp_counted_ptr_inplace<std::__future_base::_Task_state<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)>, std::allocator<int>, double (int)>, std::allocator<int>, (__gnu_cxx::_Lock_policy)2>::_M_dispose()
+  0.00    345.74     0.01     1961     0.01     0.01  void std::vector<std::future<double>, std::allocator<std::future<double> > >::_M_emplace_back_aux<std::future<double> >(std::future<double>&&)
+  0.00    345.75     0.01                             update(unsigned long long*, unsigned long long, int, int, int)
+  0.00    345.75     0.01       56     0.09     0.09  std::_Sp_counted_ptr_inplace<std::atomic<bool>, std::allocator<std::atomic<bool> >, (__gnu_cxx::_Lock_policy)2>::_M_destroy()
+  0.00    345.76     0.01                             l45(unsigned long long)
+  0.00    345.76     0.01                             std::__future_base::_Task_state<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)>, std::allocator<int>, double (int)>::~_Task_state()
+  0.00    345.77     0.01                             std::__future_base::_Result<double>::~_Result()
+  0.00    345.77     0.01                             std::_Sp_counted_ptr_inplace<std::__future_base::_State_baseV2, std::allocator<std::__future_base::_State_baseV2>, (__gnu_cxx::_Lock_policy)2>::~_Sp_counted_ptr_inplace()
+  0.00    345.77     0.00   301100     0.00     0.00  std::__future_base::_State_baseV2::_M_complete_async()
+  0.00    345.77     0.00    42741     0.00     0.00  std::_Sp_counted_ptr_inplace<std::packaged_task<double (int)>, std::allocator<std::packaged_task<double (int)> >, (__gnu_cxx::_Lock_policy)2>::_M_get_deleter(std::type_info const&)
+  0.00    345.77     0.00    36840     0.00     0.00  std::_Sp_counted_ptr_inplace<std::__future_base::_Task_state<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)>, std::allocator<int>, double (int)>, std::allocator<int>, (__gnu_cxx::_Lock_policy)2>::_M_get_deleter(std::type_info const&)
+  0.00    345.77     0.00    33710     0.00     0.00  std::_Sp_counted_ptr_inplace<std::__future_base::_Task_state<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)>, std::allocator<int>, double (int)>, std::allocator<int>, (__gnu_cxx::_Lock_policy)2>::_M_destroy()
+  0.00    345.77     0.00    25010     0.00     0.00  std::_Sp_counted_ptr_inplace<std::packaged_task<double (int)>, std::allocator<std::packaged_task<double (int)> >, (__gnu_cxx::_Lock_policy)2>::_M_destroy()
+  0.00    345.77     0.00       56     0.00     0.00  std::_Sp_counted_ptr_inplace<std::atomic<bool>, std::allocator<std::atomic<bool> >, (__gnu_cxx::_Lock_policy)2>::_M_dispose()
+  0.00    345.77     0.00        2     0.00     0.00  std::vector<std::shared_ptr<std::atomic<bool> >, std::allocator<std::shared_ptr<std::atomic<bool> > > >::_M_default_append(unsigned long)
+  0.00    345.77     0.00        2     0.00     0.00  std::vector<std::unique_ptr<std::thread, std::default_delete<std::thread> >, std::allocator<std::unique_ptr<std::thread, std::default_delete<std::thread> > > >::_M_default_append(unsigned long)
+  0.00    345.77     0.00        1     0.00     0.00  _GLOBAL__sub_I_gameClock
+  0.00    345.77     0.00        1     0.00     0.00  ctpl::thread_pool::resize(int)
+
+ %         the percentage of the total running time of the
+time       program used by this function.
+
+cumulative a running sum of the number of seconds accounted
+ seconds   for by this function and those listed above it.
+
+ self      the number of seconds accounted for by this
+seconds    function alone.  This is the major sort for this
+           listing.
+
+calls      the number of times this function was invoked, if
+           this function is profiled, else blank.
+
+ self      the average number of milliseconds spent in this
+ms/call    function per call, if this function is profiled,
+	   else blank.
+
+ total     the average number of milliseconds spent in this
+ms/call    function and its descendents per call, if this
+	   function is profiled, else blank.
+
+name       the name of the function.  This is the minor sort
+           for this listing. The index shows the location of
+	   the function in the gprof listing. If the index is
+	   in parenthesis it shows where it would appear in
+	   the gprof listing if it were to be printed.
+
+Copyright (C) 2012-2015 Free Software Foundation, Inc.
+
+Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved.
+
+		     Call graph (explanation follows)
+
+
+granularity: each sample hit covers 2 byte(s) for 0.00% of 345.77 seconds
+
+index % time    self  children    called     name
+                                                 <spontaneous>
+[1]     99.1    0.09  342.71                 std::__future_base::_State_baseV2::_M_do_set(std::function<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> ()>*, bool*) [1]
+                0.13  342.57   22938/22938       std::_Function_handler<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> (), std::__future_base::_Task_setter<std::unique_ptr<std::__future_base::_Result<double>, std::__future_base::_Result_base::_Deleter>, std::_Bind_simple<std::reference_wrapper<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)> > (int)>, double> >::_M_invoke(std::_Any_data const&) [2]
+                0.02    0.00  109745/109745      std::_Function_handler<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> (), std::__future_base::_State_baseV2::_Setter<double, double&&> >::_M_invoke(std::_Any_data const&) [21]
+-----------------------------------------------
+                0.13  342.57   22938/22938       std::__future_base::_State_baseV2::_M_do_set(std::function<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> ()>*, bool*) [1]
+[2]     99.1    0.13  342.57   22938         std::_Function_handler<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> (), std::__future_base::_Task_setter<std::unique_ptr<std::__future_base::_Result<double>, std::__future_base::_Result_base::_Deleter>, std::_Bind_simple<std::reference_wrapper<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)> > (int)>, double> >::_M_invoke(std::_Any_data const&) [2]
+               12.43  330.13   33290/33291       minimax(int, state*, state*, int, int, double, double) [3]
+-----------------------------------------------
+                              106443             minimax(int, state*, state*, int, int, double, double) [3]
+                0.00    0.01       1/33291       make_move() [22]
+               12.43  330.13   33290/33291       std::_Function_handler<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> (), std::__future_base::_Task_setter<std::unique_ptr<std::__future_base::_Result<double>, std::__future_base::_Result_base::_Deleter>, std::_Bind_simple<std::reference_wrapper<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)> > (int)>, double> >::_M_invoke(std::_Any_data const&) [2]
+[3]     99.1   12.43  330.14   33291+106443  minimax(int, state*, state*, int, int, double, double) [3]
+                3.22  197.34  832222/832222      heuristics(unsigned long long*, int) [4]
+                5.77   82.23   70848/70848       generate_children(state*, unsigned long long*, unsigned long long, int) [7]
+               23.57    0.00  218454/1052717     compute_rotations(unsigned long long (*) [4]) [6]
+               17.84    0.00  304550/2273115     _generate_moves(unsigned long long (*) [4], int) [5]
+                0.06    0.00  280655/286322      std::__future_base::_Result<double>::_M_destroy() [14]
+                0.03    0.00  290556/290556      std::_Sp_counted_ptr_inplace<std::__future_base::_State_baseV2, std::allocator<std::__future_base::_State_baseV2>, (__gnu_cxx::_Lock_policy)2>::_M_destroy() [16]
+                0.02    0.00  255370/255370      std::__future_base::_State_baseV2::~_State_baseV2() [17]
+                0.02    0.00  274083/274083      std::_Sp_counted_ptr_inplace<std::__future_base::_State_baseV2, std::allocator<std::__future_base::_State_baseV2>, (__gnu_cxx::_Lock_policy)2>::_M_dispose() [19]
+                0.02    0.00  157950/157950      std::_Sp_counted_ptr_inplace<std::__future_base::_State_baseV2, std::allocator<std::__future_base::_State_baseV2>, (__gnu_cxx::_Lock_policy)2>::_M_get_deleter(std::type_info const&) [20]
+                0.01    0.00  138477/138477      std::_Function_base::_Base_manager<std::__future_base::_State_baseV2::_Setter<double, double&&> >::_M_manager(std::_Any_data&, std::_Any_data const&, std::_Manager_operation) [23]
+                0.01    0.00    1961/1961        void std::vector<std::future<double>, std::allocator<std::future<double> > >::_M_emplace_back_aux<std::future<double> >(std::future<double>&&) [26]
+                0.01    0.00   27232/32600       std::_Sp_counted_ptr_inplace<std::__future_base::_Task_state<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)>, std::allocator<int>, double (int)>, std::allocator<int>, (__gnu_cxx::_Lock_policy)2>::_M_dispose() [25]
+                0.00    0.00     111/23715       std::_Sp_counted_ptr_inplace<std::packaged_task<double (int)>, std::allocator<std::packaged_task<double (int)> >, (__gnu_cxx::_Lock_policy)2>::_M_dispose() [12]
+                0.00    0.00  301100/301100      std::__future_base::_State_baseV2::_M_complete_async() [41]
+                0.00    0.00   42741/42741       std::_Sp_counted_ptr_inplace<std::packaged_task<double (int)>, std::allocator<std::packaged_task<double (int)> >, (__gnu_cxx::_Lock_policy)2>::_M_get_deleter(std::type_info const&) [42]
+                0.00    0.00   36840/36840       std::_Sp_counted_ptr_inplace<std::__future_base::_Task_state<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)>, std::allocator<int>, double (int)>, std::allocator<int>, (__gnu_cxx::_Lock_policy)2>::_M_get_deleter(std::type_info const&) [43]
+                0.00    0.00   28614/33710       std::_Sp_counted_ptr_inplace<std::__future_base::_Task_state<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)>, std::allocator<int>, double (int)>, std::allocator<int>, (__gnu_cxx::_Lock_policy)2>::_M_destroy() [44]
+                0.00    0.00      90/25010       std::_Sp_counted_ptr_inplace<std::packaged_task<double (int)>, std::allocator<std::packaged_task<double (int)> >, (__gnu_cxx::_Lock_policy)2>::_M_destroy() [45]
+                              106443             minimax(int, state*, state*, int, int, double, double) [3]
+-----------------------------------------------
+                3.22  197.34  832222/832222      minimax(int, state*, state*, int, int, double, double) [3]
+[4]     58.0    3.22  197.34  832222         heuristics(unsigned long long*, int) [4]
+              115.29    0.00 1968565/2273115     _generate_moves(unsigned long long (*) [4], int) [5]
+               82.05    0.00  760312/1052717     compute_rotations(unsigned long long (*) [4]) [6]
+-----------------------------------------------
+               17.84    0.00  304550/2273115     minimax(int, state*, state*, int, int, double, double) [3]
+              115.29    0.00 1968565/2273115     heuristics(unsigned long long*, int) [4]
+[5]     38.5  133.12    0.00 2273115         _generate_moves(unsigned long long (*) [4], int) [5]
+-----------------------------------------------
+                7.98    0.00   73951/1052717     generate_children(state*, unsigned long long*, unsigned long long, int) [7]
+               23.57    0.00  218454/1052717     minimax(int, state*, state*, int, int, double, double) [3]
+               82.05    0.00  760312/1052717     heuristics(unsigned long long*, int) [4]
+[6]     32.9  113.61    0.00 1052717         compute_rotations(unsigned long long (*) [4]) [6]
+-----------------------------------------------
+                5.77   82.23   70848/70848       minimax(int, state*, state*, int, int, double, double) [3]
+[7]     25.5    5.77   82.23   70848         generate_children(state*, unsigned long long*, unsigned long long, int) [7]
+               73.26    0.99  747385/747385      generate_child(unsigned long long (*) [4], unsigned long long, int, int, int) [8]
+                7.98    0.00   73951/1052717     compute_rotations(unsigned long long (*) [4]) [6]
+-----------------------------------------------
+               73.26    0.99  747385/747385      generate_children(state*, unsigned long long*, unsigned long long, int) [7]
+[8]     21.5   73.26    0.99  747385         generate_child(unsigned long long (*) [4], unsigned long long, int, int, int) [8]
+                0.99    0.00 4155667/4155667     flip(unsigned long long, unsigned long long, unsigned long long) [10]
+-----------------------------------------------
+                                                 <spontaneous>
+[9]      0.8    2.04    0.82                 std::thread::_State_impl<std::_Bind_simple<ctpl::thread_pool::set_thread(int)::{lambda()#1} ()> >::_M_run() [9]
+                0.32    0.40   26338/26338       std::_Function_base::_Base_manager<std::future<decltype ({parm#1}(0, {parm#2}...))> ctpl::thread_pool::push<double (&)(int, state*, state*, int, int, double, double), state*&, state*, int, int, double, double>(double (&)(int, state*, state*, int, int, double, double), state*&, state*&&, int&&, int&&, double&&, double&&)::{lambda(int)#1}>::_M_manager(std::_Any_data&, std::_Function_base::_Base_manager<std::future<decltype ({parm#1}(0, {parm#2}...))> ctpl::thread_pool::push<double (&)(int, state*, state*, int, int, double, double), state*&, state*, int, int, double, double>(double (&)(int, state*, state*, int, int, double, double), state*&, state*&&, int&&, int&&, double&&, double&&)::{lambda(int)#1}> const&, std::_Manager_operation) [11]
+                0.09    0.01   29447/29447       std::_Function_handler<void (int), std::future<decltype ({parm#1}(0, {parm#2}...))> ctpl::thread_pool::push<double (&)(int, state*, state*, int, int, double, double), state*&, state*, int, int, double, double>(double (&)(int, state*, state*, int, int, double, double), state*&, state*&&, int&&, int&&, double&&, double&&)::{lambda(int)#1}>::_M_invoke(std::_Any_data const&, int&&) [13]
+-----------------------------------------------
+                0.99    0.00 4155667/4155667     generate_child(unsigned long long (*) [4], unsigned long long, int, int, int) [8]
+[10]     0.3    0.99    0.00 4155667         flip(unsigned long long, unsigned long long, unsigned long long) [10]
+-----------------------------------------------
+                0.32    0.40   26338/26338       std::thread::_State_impl<std::_Bind_simple<ctpl::thread_pool::set_thread(int)::{lambda()#1} ()> >::_M_run() [9]
+[11]     0.2    0.32    0.40   26338         std::_Function_base::_Base_manager<std::future<decltype ({parm#1}(0, {parm#2}...))> ctpl::thread_pool::push<double (&)(int, state*, state*, int, int, double, double), state*&, state*, int, int, double, double>(double (&)(int, state*, state*, int, int, double, double), state*&, state*&&, int&&, int&&, double&&, double&&)::{lambda(int)#1}>::_M_manager(std::_Any_data&, std::_Function_base::_Base_manager<std::future<decltype ({parm#1}(0, {parm#2}...))> ctpl::thread_pool::push<double (&)(int, state*, state*, int, int, double, double), state*&, state*, int, int, double, double>(double (&)(int, state*, state*, int, int, double, double), state*&, state*&&, int&&, int&&, double&&, double&&)::{lambda(int)#1}> const&, std::_Manager_operation) [11]
+                0.40    0.00   23604/23715       std::_Sp_counted_ptr_inplace<std::packaged_task<double (int)>, std::allocator<std::packaged_task<double (int)> >, (__gnu_cxx::_Lock_policy)2>::_M_dispose() [12]
+                0.00    0.00   24920/25010       std::_Sp_counted_ptr_inplace<std::packaged_task<double (int)>, std::allocator<std::packaged_task<double (int)> >, (__gnu_cxx::_Lock_policy)2>::_M_destroy() [45]
+-----------------------------------------------
+                0.00    0.00     111/23715       minimax(int, state*, state*, int, int, double, double) [3]
+                0.40    0.00   23604/23715       std::_Function_base::_Base_manager<std::future<decltype ({parm#1}(0, {parm#2}...))> ctpl::thread_pool::push<double (&)(int, state*, state*, int, int, double, double), state*&, state*, int, int, double, double>(double (&)(int, state*, state*, int, int, double, double), state*&, state*&&, int&&, int&&, double&&, double&&)::{lambda(int)#1}>::_M_manager(std::_Any_data&, std::_Function_base::_Base_manager<std::future<decltype ({parm#1}(0, {parm#2}...))> ctpl::thread_pool::push<double (&)(int, state*, state*, int, int, double, double), state*&, state*, int, int, double, double>(double (&)(int, state*, state*, int, int, double, double), state*&, state*&&, int&&, int&&, double&&, double&&)::{lambda(int)#1}> const&, std::_Manager_operation) [11]
+[12]     0.1    0.40    0.00   23715         std::_Sp_counted_ptr_inplace<std::packaged_task<double (int)>, std::allocator<std::packaged_task<double (int)> >, (__gnu_cxx::_Lock_policy)2>::_M_dispose() [12]
+                0.00    0.00    5368/32600       std::_Sp_counted_ptr_inplace<std::__future_base::_Task_state<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)>, std::allocator<int>, double (int)>, std::allocator<int>, (__gnu_cxx::_Lock_policy)2>::_M_dispose() [25]
+                0.00    0.00    5667/286322      std::__future_base::_Result<double>::_M_destroy() [14]
+                0.00    0.00    5096/33710       std::_Sp_counted_ptr_inplace<std::__future_base::_Task_state<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)>, std::allocator<int>, double (int)>, std::allocator<int>, (__gnu_cxx::_Lock_policy)2>::_M_destroy() [44]
+-----------------------------------------------
+                0.09    0.01   29447/29447       std::thread::_State_impl<std::_Bind_simple<ctpl::thread_pool::set_thread(int)::{lambda()#1} ()> >::_M_run() [9]
+[13]     0.0    0.09    0.01   29447         std::_Function_handler<void (int), std::future<decltype ({parm#1}(0, {parm#2}...))> ctpl::thread_pool::push<double (&)(int, state*, state*, int, int, double, double), state*&, state*, int, int, double, double>(double (&)(int, state*, state*, int, int, double, double), state*&, state*&&, int&&, int&&, double&&, double&&)::{lambda(int)#1}>::_M_invoke(std::_Any_data const&, int&&) [13]
+                0.01    0.00   33205/33205       std::_Function_base::_Base_manager<std::__future_base::_Task_setter<std::unique_ptr<std::__future_base::_Result<double>, std::__future_base::_Result_base::_Deleter>, std::_Bind_simple<std::reference_wrapper<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)> > (int)>, double> >::_M_manager(std::_Any_data&, std::_Any_data const&, std::_Manager_operation) [24]
+-----------------------------------------------
+                0.00    0.00    5667/286322      std::_Sp_counted_ptr_inplace<std::packaged_task<double (int)>, std::allocator<std::packaged_task<double (int)> >, (__gnu_cxx::_Lock_policy)2>::_M_dispose() [12]
+                0.06    0.00  280655/286322      minimax(int, state*, state*, int, int, double, double) [3]
+[14]     0.0    0.06    0.00  286322         std::__future_base::_Result<double>::_M_destroy() [14]
+-----------------------------------------------
+                                                 <spontaneous>
+[15]     0.0    0.05    0.00                 void std::call_once<void (std::__future_base::_State_baseV2::*)(std::function<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> ()>*, bool*), std::__future_base::_State_baseV2*, std::function<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> ()>*, bool*>(std::once_flag&, void (std::__future_base::_State_baseV2::*&&)(std::function<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> ()>*, bool*), std::__future_base::_State_baseV2*&&, std::function<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> ()>*&&, bool*&&)::{lambda()#2}::_FUN() [15]
+-----------------------------------------------
+                0.03    0.00  290556/290556      minimax(int, state*, state*, int, int, double, double) [3]
+[16]     0.0    0.03    0.00  290556         std::_Sp_counted_ptr_inplace<std::__future_base::_State_baseV2, std::allocator<std::__future_base::_State_baseV2>, (__gnu_cxx::_Lock_policy)2>::_M_destroy() [16]
+-----------------------------------------------
+                0.02    0.00  255370/255370      minimax(int, state*, state*, int, int, double, double) [3]
+[17]     0.0    0.02    0.00  255370         std::__future_base::_State_baseV2::~_State_baseV2() [17]
+-----------------------------------------------
+                                                 <spontaneous>
+[18]     0.0    0.02    0.00                 generate_moves(unsigned long long*, int) [18]
+-----------------------------------------------
+                0.02    0.00  274083/274083      minimax(int, state*, state*, int, int, double, double) [3]
+[19]     0.0    0.02    0.00  274083         std::_Sp_counted_ptr_inplace<std::__future_base::_State_baseV2, std::allocator<std::__future_base::_State_baseV2>, (__gnu_cxx::_Lock_policy)2>::_M_dispose() [19]
+-----------------------------------------------
+                0.02    0.00  157950/157950      minimax(int, state*, state*, int, int, double, double) [3]
+[20]     0.0    0.02    0.00  157950         std::_Sp_counted_ptr_inplace<std::__future_base::_State_baseV2, std::allocator<std::__future_base::_State_baseV2>, (__gnu_cxx::_Lock_policy)2>::_M_get_deleter(std::type_info const&) [20]
+-----------------------------------------------
+                0.02    0.00  109745/109745      std::__future_base::_State_baseV2::_M_do_set(std::function<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> ()>*, bool*) [1]
+[21]     0.0    0.02    0.00  109745         std::_Function_handler<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> (), std::__future_base::_State_baseV2::_Setter<double, double&&> >::_M_invoke(std::_Any_data const&) [21]
+-----------------------------------------------
+                                                 <spontaneous>
+[22]     0.0    0.00    0.01                 make_move() [22]
+                0.00    0.01       1/33291       minimax(int, state*, state*, int, int, double, double) [3]
+-----------------------------------------------
+                0.01    0.00  138477/138477      minimax(int, state*, state*, int, int, double, double) [3]
+[23]     0.0    0.01    0.00  138477         std::_Function_base::_Base_manager<std::__future_base::_State_baseV2::_Setter<double, double&&> >::_M_manager(std::_Any_data&, std::_Any_data const&, std::_Manager_operation) [23]
+-----------------------------------------------
+                0.01    0.00   33205/33205       std::_Function_handler<void (int), std::future<decltype ({parm#1}(0, {parm#2}...))> ctpl::thread_pool::push<double (&)(int, state*, state*, int, int, double, double), state*&, state*, int, int, double, double>(double (&)(int, state*, state*, int, int, double, double), state*&, state*&&, int&&, int&&, double&&, double&&)::{lambda(int)#1}>::_M_invoke(std::_Any_data const&, int&&) [13]
+[24]     0.0    0.01    0.00   33205         std::_Function_base::_Base_manager<std::__future_base::_Task_setter<std::unique_ptr<std::__future_base::_Result<double>, std::__future_base::_Result_base::_Deleter>, std::_Bind_simple<std::reference_wrapper<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)> > (int)>, double> >::_M_manager(std::_Any_data&, std::_Any_data const&, std::_Manager_operation) [24]
+-----------------------------------------------
+                0.00    0.00    5368/32600       std::_Sp_counted_ptr_inplace<std::packaged_task<double (int)>, std::allocator<std::packaged_task<double (int)> >, (__gnu_cxx::_Lock_policy)2>::_M_dispose() [12]
+                0.01    0.00   27232/32600       minimax(int, state*, state*, int, int, double, double) [3]
+[25]     0.0    0.01    0.00   32600         std::_Sp_counted_ptr_inplace<std::__future_base::_Task_state<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)>, std::allocator<int>, double (int)>, std::allocator<int>, (__gnu_cxx::_Lock_policy)2>::_M_dispose() [25]
+-----------------------------------------------
+                0.01    0.00    1961/1961        minimax(int, state*, state*, int, int, double, double) [3]
+[26]     0.0    0.01    0.00    1961         void std::vector<std::future<double>, std::allocator<std::future<double> > >::_M_emplace_back_aux<std::future<double> >(std::future<double>&&) [26]
+-----------------------------------------------
+                                                 <spontaneous>
+[27]     0.0    0.01    0.00                 update(unsigned long long*, unsigned long long, int, int, int) [27]
+-----------------------------------------------
+                0.01    0.00      56/56          ctpl::thread_pool::~thread_pool() [30]
+[28]     0.0    0.01    0.00      56         std::_Sp_counted_ptr_inplace<std::atomic<bool>, std::allocator<std::atomic<bool> >, (__gnu_cxx::_Lock_policy)2>::_M_destroy() [28]
+-----------------------------------------------
+                                                 <spontaneous>
+[29]     0.0    0.01    0.00                 l45(unsigned long long) [29]
+-----------------------------------------------
+                                                 <spontaneous>
+[30]     0.0    0.00    0.01                 ctpl::thread_pool::~thread_pool() [30]
+                0.01    0.00      56/56          std::_Sp_counted_ptr_inplace<std::atomic<bool>, std::allocator<std::atomic<bool> >, (__gnu_cxx::_Lock_policy)2>::_M_destroy() [28]
+                0.00    0.00      56/56          std::_Sp_counted_ptr_inplace<std::atomic<bool>, std::allocator<std::atomic<bool> >, (__gnu_cxx::_Lock_policy)2>::_M_dispose() [46]
+-----------------------------------------------
+                                                 <spontaneous>
+[31]     0.0    0.01    0.00                 std::__future_base::_Task_state<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)>, std::allocator<int>, double (int)>::~_Task_state() [31]
+-----------------------------------------------
+                                                 <spontaneous>
+[32]     0.0    0.01    0.00                 std::__future_base::_Result<double>::~_Result() [32]
+-----------------------------------------------
+                                                 <spontaneous>
+[33]     0.0    0.01    0.00                 std::_Sp_counted_ptr_inplace<std::__future_base::_State_baseV2, std::allocator<std::__future_base::_State_baseV2>, (__gnu_cxx::_Lock_policy)2>::~_Sp_counted_ptr_inplace() [33]
+-----------------------------------------------
+                0.00    0.00  301100/301100      minimax(int, state*, state*, int, int, double, double) [3]
+[41]     0.0    0.00    0.00  301100         std::__future_base::_State_baseV2::_M_complete_async() [41]
+-----------------------------------------------
+                0.00    0.00   42741/42741       minimax(int, state*, state*, int, int, double, double) [3]
+[42]     0.0    0.00    0.00   42741         std::_Sp_counted_ptr_inplace<std::packaged_task<double (int)>, std::allocator<std::packaged_task<double (int)> >, (__gnu_cxx::_Lock_policy)2>::_M_get_deleter(std::type_info const&) [42]
+-----------------------------------------------
+                0.00    0.00   36840/36840       minimax(int, state*, state*, int, int, double, double) [3]
+[43]     0.0    0.00    0.00   36840         std::_Sp_counted_ptr_inplace<std::__future_base::_Task_state<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)>, std::allocator<int>, double (int)>, std::allocator<int>, (__gnu_cxx::_Lock_policy)2>::_M_get_deleter(std::type_info const&) [43]
+-----------------------------------------------
+                0.00    0.00    5096/33710       std::_Sp_counted_ptr_inplace<std::packaged_task<double (int)>, std::allocator<std::packaged_task<double (int)> >, (__gnu_cxx::_Lock_policy)2>::_M_dispose() [12]
+                0.00    0.00   28614/33710       minimax(int, state*, state*, int, int, double, double) [3]
+[44]     0.0    0.00    0.00   33710         std::_Sp_counted_ptr_inplace<std::__future_base::_Task_state<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)>, std::allocator<int>, double (int)>, std::allocator<int>, (__gnu_cxx::_Lock_policy)2>::_M_destroy() [44]
+-----------------------------------------------
+                0.00    0.00      90/25010       minimax(int, state*, state*, int, int, double, double) [3]
+                0.00    0.00   24920/25010       std::_Function_base::_Base_manager<std::future<decltype ({parm#1}(0, {parm#2}...))> ctpl::thread_pool::push<double (&)(int, state*, state*, int, int, double, double), state*&, state*, int, int, double, double>(double (&)(int, state*, state*, int, int, double, double), state*&, state*&&, int&&, int&&, double&&, double&&)::{lambda(int)#1}>::_M_manager(std::_Any_data&, std::_Function_base::_Base_manager<std::future<decltype ({parm#1}(0, {parm#2}...))> ctpl::thread_pool::push<double (&)(int, state*, state*, int, int, double, double), state*&, state*, int, int, double, double>(double (&)(int, state*, state*, int, int, double, double), state*&, state*&&, int&&, int&&, double&&, double&&)::{lambda(int)#1}> const&, std::_Manager_operation) [11]
+[45]     0.0    0.00    0.00   25010         std::_Sp_counted_ptr_inplace<std::packaged_task<double (int)>, std::allocator<std::packaged_task<double (int)> >, (__gnu_cxx::_Lock_policy)2>::_M_destroy() [45]
+-----------------------------------------------
+                0.00    0.00      56/56          ctpl::thread_pool::~thread_pool() [30]
+[46]     0.0    0.00    0.00      56         std::_Sp_counted_ptr_inplace<std::atomic<bool>, std::allocator<std::atomic<bool> >, (__gnu_cxx::_Lock_policy)2>::_M_dispose() [46]
+-----------------------------------------------
+                0.00    0.00       2/2           ctpl::thread_pool::resize(int) [50]
+[47]     0.0    0.00    0.00       2         std::vector<std::shared_ptr<std::atomic<bool> >, std::allocator<std::shared_ptr<std::atomic<bool> > > >::_M_default_append(unsigned long) [47]
+-----------------------------------------------
+                0.00    0.00       2/2           ctpl::thread_pool::resize(int) [50]
+[48]     0.0    0.00    0.00       2         std::vector<std::unique_ptr<std::thread, std::default_delete<std::thread> >, std::allocator<std::unique_ptr<std::thread, std::default_delete<std::thread> > > >::_M_default_append(unsigned long) [48]
+-----------------------------------------------
+                0.00    0.00       1/1           __libc_csu_init [99]
+[49]     0.0    0.00    0.00       1         _GLOBAL__sub_I_gameClock [49]
+-----------------------------------------------
+                0.00    0.00       1/1           ctpl::thread_pool::thread_pool(int, int) [69]
+[50]     0.0    0.00    0.00       1         ctpl::thread_pool::resize(int) [50]
+                0.00    0.00       2/2           std::vector<std::shared_ptr<std::atomic<bool> >, std::allocator<std::shared_ptr<std::atomic<bool> > > >::_M_default_append(unsigned long) [47]
+                0.00    0.00       2/2           std::vector<std::unique_ptr<std::thread, std::default_delete<std::thread> >, std::allocator<std::unique_ptr<std::thread, std::default_delete<std::thread> > > >::_M_default_append(unsigned long) [48]
+-----------------------------------------------
+
+ This table describes the call tree of the program, and was sorted by
+ the total amount of time spent in each function and its children.
+
+ Each entry in this table consists of several lines.  The line with the
+ index number at the left hand margin lists the current function.
+ The lines above it list the functions that called this function,
+ and the lines below it list the functions this one called.
+ This line lists:
+     index	A unique number given to each element of the table.
+		Index numbers are sorted numerically.
+		The index number is printed next to every function name so
+		it is easier to look up where the function is in the table.
+
+     % time	This is the percentage of the `total' time that was spent
+		in this function and its children.  Note that due to
+		different viewpoints, functions excluded by options, etc,
+		these numbers will NOT add up to 100%.
+
+     self	This is the total amount of time spent in this function.
+
+     children	This is the total amount of time propagated into this
+		function by its children.
+
+     called	This is the number of times the function was called.
+		If the function called itself recursively, the number
+		only includes non-recursive calls, and is followed by
+		a `+' and the number of recursive calls.
+
+     name	The name of the current function.  The index number is
+		printed after it.  If the function is a member of a
+		cycle, the cycle number is printed between the
+		function's name and the index number.
+
+
+ For the function's parents, the fields have the following meanings:
+
+     self	This is the amount of time that was propagated directly
+		from the function into this parent.
+
+     children	This is the amount of time that was propagated from
+		the function's children into this parent.
+
+     called	This is the number of times this parent called the
+		function `/' the total number of times the function
+		was called.  Recursive calls to the function are not
+		included in the number after the `/'.
+
+     name	This is the name of the parent.  The parent's index
+		number is printed after it.  If the parent is a
+		member of a cycle, the cycle number is printed between
+		the name and the index number.
+
+ If the parents of the function cannot be determined, the word
+ `<spontaneous>' is printed in the `name' field, and all the other
+ fields are blank.
+
+ For the function's children, the fields have the following meanings:
+
+     self	This is the amount of time that was propagated directly
+		from the child into the function.
+
+     children	This is the amount of time that was propagated from the
+		child's children to the function.
+
+     called	This is the number of times the function called
+		this child `/' the total number of times the child
+		was called.  Recursive calls by the child are not
+		listed in the number after the `/'.
+
+     name	This is the name of the child.  The child's index
+		number is printed after it.  If the child is a
+		member of a cycle, the cycle number is printed
+		between the name and the index number.
+
+ If there are any cycles (circles) in the call graph, there is an
+ entry for the cycle-as-a-whole.  This entry shows who called the
+ cycle (as parents) and the members of the cycle (as children.)
+ The `+' recursive calls entry shows the number of function calls that
+ were internal to the cycle, and the calls entry for each member shows,
+ for that member, how many times it was called from other members of
+ the cycle.
+
+Copyright (C) 2012-2015 Free Software Foundation, Inc.
+
+Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved.
+
+Index by function name
+
+  [49] _GLOBAL__sub_I_gameClock [1] std::__future_base::_State_baseV2::_M_do_set(std::function<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> ()>*, bool*) [19] std::_Sp_counted_ptr_inplace<std::__future_base::_State_baseV2, std::allocator<std::__future_base::_State_baseV2>, (__gnu_cxx::_Lock_policy)2>::_M_dispose()
+   [4] heuristics(unsigned long long*, int) [17] std::__future_base::_State_baseV2::~_State_baseV2() [20] std::_Sp_counted_ptr_inplace<std::__future_base::_State_baseV2, std::allocator<std::__future_base::_State_baseV2>, (__gnu_cxx::_Lock_policy)2>::_M_get_deleter(std::type_info const&)
+   [8] generate_child(unsigned long long (*) [4], unsigned long long, int, int, int) [14] std::__future_base::_Result<double>::_M_destroy() [33] std::_Sp_counted_ptr_inplace<std::__future_base::_State_baseV2, std::allocator<std::__future_base::_State_baseV2>, (__gnu_cxx::_Lock_policy)2>::~_Sp_counted_ptr_inplace()
+  [18] generate_moves(unsigned long long*, int) [32] std::__future_base::_Result<double>::~_Result() [45] std::_Sp_counted_ptr_inplace<std::packaged_task<double (int)>, std::allocator<std::packaged_task<double (int)> >, (__gnu_cxx::_Lock_policy)2>::_M_destroy()
+   [5] _generate_moves(unsigned long long (*) [4], int) [24] std::_Function_base::_Base_manager<std::__future_base::_Task_setter<std::unique_ptr<std::__future_base::_Result<double>, std::__future_base::_Result_base::_Deleter>, std::_Bind_simple<std::reference_wrapper<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)> > (int)>, double> >::_M_manager(std::_Any_data&, std::_Any_data const&, std::_Manager_operation) [12] std::_Sp_counted_ptr_inplace<std::packaged_task<double (int)>, std::allocator<std::packaged_task<double (int)> >, (__gnu_cxx::_Lock_policy)2>::_M_dispose()
+   [6] compute_rotations(unsigned long long (*) [4]) [23] std::_Function_base::_Base_manager<std::__future_base::_State_baseV2::_Setter<double, double&&> >::_M_manager(std::_Any_data&, std::_Any_data const&, std::_Manager_operation) [42] std::_Sp_counted_ptr_inplace<std::packaged_task<double (int)>, std::allocator<std::packaged_task<double (int)> >, (__gnu_cxx::_Lock_policy)2>::_M_get_deleter(std::type_info const&)
+   [7] generate_children(state*, unsigned long long*, unsigned long long, int) [11] std::_Function_base::_Base_manager<std::future<decltype ({parm#1}(0, {parm#2}...))> ctpl::thread_pool::push<double (&)(int, state*, state*, int, int, double, double), state*&, state*, int, int, double, double>(double (&)(int, state*, state*, int, int, double, double), state*&, state*&&, int&&, int&&, double&&, double&&)::{lambda(int)#1}>::_M_manager(std::_Any_data&, std::_Function_base::_Base_manager<std::future<decltype ({parm#1}(0, {parm#2}...))> ctpl::thread_pool::push<double (&)(int, state*, state*, int, int, double, double), state*&, state*, int, int, double, double>(double (&)(int, state*, state*, int, int, double, double), state*&, state*&&, int&&, int&&, double&&, double&&)::{lambda(int)#1}> const&, std::_Manager_operation) [28] std::_Sp_counted_ptr_inplace<std::atomic<bool>, std::allocator<std::atomic<bool> >, (__gnu_cxx::_Lock_policy)2>::_M_destroy()
+  [29] l45(unsigned long long) [2] std::_Function_handler<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> (), std::__future_base::_Task_setter<std::unique_ptr<std::__future_base::_Result<double>, std::__future_base::_Result_base::_Deleter>, std::_Bind_simple<std::reference_wrapper<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)> > (int)>, double> >::_M_invoke(std::_Any_data const&) [46] std::_Sp_counted_ptr_inplace<std::atomic<bool>, std::allocator<std::atomic<bool> >, (__gnu_cxx::_Lock_policy)2>::_M_dispose()
+  [10] flip(unsigned long long, unsigned long long, unsigned long long) [21] std::_Function_handler<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> (), std::__future_base::_State_baseV2::_Setter<double, double&&> >::_M_invoke(std::_Any_data const&) [9] std::thread::_State_impl<std::_Bind_simple<ctpl::thread_pool::set_thread(int)::{lambda()#1} ()> >::_M_run()
+  [27] update(unsigned long long*, unsigned long long, int, int, int) [13] std::_Function_handler<void (int), std::future<decltype ({parm#1}(0, {parm#2}...))> ctpl::thread_pool::push<double (&)(int, state*, state*, int, int, double, double), state*&, state*, int, int, double, double>(double (&)(int, state*, state*, int, int, double, double), state*&, state*&&, int&&, int&&, double&&, double&&)::{lambda(int)#1}>::_M_invoke(std::_Any_data const&, int&&) [47] std::vector<std::shared_ptr<std::atomic<bool> >, std::allocator<std::shared_ptr<std::atomic<bool> > > >::_M_default_append(unsigned long)
+   [3] minimax(int, state*, state*, int, int, double, double) [44] std::_Sp_counted_ptr_inplace<std::__future_base::_Task_state<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)>, std::allocator<int>, double (int)>, std::allocator<int>, (__gnu_cxx::_Lock_policy)2>::_M_destroy() [48] std::vector<std::unique_ptr<std::thread, std::default_delete<std::thread> >, std::allocator<std::unique_ptr<std::thread, std::default_delete<std::thread> > > >::_M_default_append(unsigned long)
+  [50] ctpl::thread_pool::resize(int) [25] std::_Sp_counted_ptr_inplace<std::__future_base::_Task_state<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)>, std::allocator<int>, double (int)>, std::allocator<int>, (__gnu_cxx::_Lock_policy)2>::_M_dispose() [26] void std::vector<std::future<double>, std::allocator<std::future<double> > >::_M_emplace_back_aux<std::future<double> >(std::future<double>&&)
+  [31] std::__future_base::_Task_state<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)>, std::allocator<int>, double (int)>::~_Task_state() [43] std::_Sp_counted_ptr_inplace<std::__future_base::_Task_state<std::_Bind<double (*(std::_Placeholder<1>, state*, state*, int, int, double, double))(int, state*, state*, int, int, double, double)>, std::allocator<int>, double (int)>, std::allocator<int>, (__gnu_cxx::_Lock_policy)2>::_M_get_deleter(std::type_info const&) [15] void std::call_once<void (std::__future_base::_State_baseV2::*)(std::function<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> ()>*, bool*), std::__future_base::_State_baseV2*, std::function<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> ()>*, bool*>(std::once_flag&, void (std::__future_base::_State_baseV2::*&&)(std::function<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> ()>*, bool*), std::__future_base::_State_baseV2*&&, std::function<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> ()>*&&, bool*&&)::{lambda()#2}::_FUN()
+  [41] std::__future_base::_State_baseV2::_M_complete_async() [16] std::_Sp_counted_ptr_inplace<std::__future_base::_State_baseV2, std::allocator<std::__future_base::_State_baseV2>, (__gnu_cxx::_Lock_policy)2>::_M_destroy()
