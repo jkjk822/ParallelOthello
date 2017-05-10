@@ -93,7 +93,7 @@ Rotations were precalculated and stored in a table instead of dynamically calcul
      21.92     25.25     5.70  9565254     0.00     0.00  generate_child ***
       1.40     25.61     0.37 11579102     0.00     0.00  heuristics
       0.69     25.79     0.18   960713     0.00     0.00  generate_children *
-      0.46     25.91     0.12        1     0.12    26.01  minimax
+      0.46     25.91     0.12        1     0.12    26.01  minimax *
       0.37     26.01     0.10 38261016     0.00     0.00  flip
       0.00     26.01     0.00        1     0.00     0.00  _GLOBAL__sub_I_gameClock
 
