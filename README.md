@@ -78,6 +78,7 @@ Positions are determined by x, then y. So the upper-right black piece below is a
 ### Bitboard diagonals
 
 **Rotated boards:**
+
 This shows a board rotated right 45 degrees. Each pair represents the location of this square in the unrotated board. Notice that each row is a diagonal, with the main diagonal on top.
 
 	  0   1   2   3   4   5   6   7
@@ -99,6 +100,7 @@ Rotations were taking a substantial amount of time in our algorithm, so we decid
 ### Before Rotation Precalculation
 
 These results were generated using `gprof`
+
 **Stars represent function dependence on rotation**
 - 1-star: calls functions that use rotations
 - 2-star: directly uses rotations
@@ -122,6 +124,7 @@ These results were generated using `gprof`
 ### After Rotation Precalculation
 
 These results were generated using `gprof`
+
 **Stars represent function dependence on rotation**
 - 1-star: calls functions that use rotations
 - 2-star: directly uses rotations
